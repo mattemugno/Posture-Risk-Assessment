@@ -1,0 +1,76 @@
+import logging
+
+import cv2
+import numpy as np
+
+
+def set_logger():
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[
+            logging.FileHandler("../logs/app.log", mode='w'),
+            # logging.StreamHandler(sys.stdout)
+        ]
+    )
+
+
+def visualize_angles(image, angle, joint):
+    cv2.putText(image, str(angle),
+                tuple(np.multiply(joint, [640, 480]).astype(int)),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA
+                )
+
+
+def calculate_angle(a, b, c):
+    a = np.array(a)  # First
+    b = np.array(b)  # Mid
+    c = np.array(c)  # End
+
+    radians = np.arctan2(c[1] - b[1], c[0] - b[0]) - np.arctan2(a[1] - b[1], a[0] - b[0])
+    angle = np.abs(radians * 180.0 / np.pi)
+
+    if angle > 180.0:
+        angle = 360 - angle
+
+    return angle
+
+
+def get_left_arm_landmarks(mp_pose, landmarks):
+    left_shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x,
+                     landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
+    left_elbow = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x,
+                  landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y]
+    left_wrist = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x,
+                  landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y]
+    return left_shoulder, left_elbow, left_wrist
+
+
+def get_right_arm_landmarks(mp_pose, landmarks):
+    right_shoulder = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x,
+                      landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
+    right_elbow = [landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].x,
+                   landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].y]
+    right_wrist = [landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].x,
+                   landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].y]
+    return right_shoulder, right_elbow, right_wrist
+
+
+def get_right_leg_landmarks(mp_pose, landmarks):
+    right_hip = [landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].x,
+                 landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].y]
+    right_knee = [landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].x,
+                  landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].y]
+    right_ankle = [landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].x,
+                   landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].y]
+    return right_hip, right_knee, right_ankle
+
+
+def get_left_leg_landmarks(mp_pose, landmarks):
+    left_hip = [landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x,
+                landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y]
+    left_knee = [landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].x,
+                 landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].y]
+    left_ankle = [landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].x,
+                  landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].y]
+    return left_hip, left_knee, left_ankle
