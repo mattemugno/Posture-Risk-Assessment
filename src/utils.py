@@ -74,3 +74,19 @@ def get_left_leg_landmarks(mp_pose, landmarks):
     left_ankle = [landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].x,
                   landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].y]
     return left_hip, left_knee, left_ankle
+
+
+def show_angles_in_box(image, left_arm_angle, right_arm_angle, left_leg_angle, right_leg_angle):
+    # Show angles in box
+    cv2.putText(image, "Left arm angle : " + str("{:.2f}".format(left_arm_angle)),
+                (30, 40),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
+    cv2.putText(image, "Right arm angle : " + str("{:.2f}".format(right_arm_angle)),
+                (30, 60),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
+    cv2.putText(image, "Left angle knee : " + str("{:.2f}".format(left_leg_angle)),
+                (30, 80),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
+    cv2.putText(image, "Right angle knee : " + str("{:.2f}".format(right_leg_angle)),
+                (30, 100),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
