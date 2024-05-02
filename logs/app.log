@@ -1,2 +1,4 @@
-2024-04-30 19:20:38,347 [INFO] PoseDetector instance created.
-2024-04-30 19:20:38,348 [INFO] Turning on the camera for finding landmarks
+2024-05-02 16:00:56,054 [INFO] PoseDetector instance created.
+2024-05-02 16:00:56,055 [INFO] Turning on the camera for finding landmarks
+2024-05-02 16:01:37,088 [INFO] Exit the camera
+2024-05-02 16:01:37,380 [INFO] Save data in C:\Users\matte\PycharmProjects\PostureRiskAssessment\data\data.json
