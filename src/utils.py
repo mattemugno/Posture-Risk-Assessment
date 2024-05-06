@@ -1,7 +1,10 @@
 import logging
+import math
 
 import cv2
 import numpy as np
+import seaborn as sns
+from matplotlib import pyplot as plt, patches
 
 
 def set_logger():
@@ -42,109 +45,57 @@ def calculate_angle(a, b, c):
     return angle
 
 
-def get_left_arm_landmarks(mp_pose, landmarks, confidence):
-    if check_visibility(landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].visibility,
-                        landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].visibility,
-                        landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].visibility,
-                        confidence):
-
-        left_shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x,
-                         landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
-        left_elbow = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x,
-                      landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y]
-        left_wrist = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x,
-                      landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y]
-        return left_shoulder, left_elbow, left_wrist
-
-    else:
-        return None, None, None
+def findDistance(x1, y1, x2, y2):
+    dist = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+    return dist
 
 
-def get_right_arm_landmarks(mp_pose, landmarks, confidence):
-    if check_visibility(landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].visibility,
-                        landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].visibility,
-                        landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].visibility,
-                        confidence):
-
-        right_shoulder = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x,
-                          landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
-        right_elbow = [landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].x,
-                       landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].y]
-        right_wrist = [landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].x,
-                       landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].y]
-        return right_shoulder, right_elbow, right_wrist
-    else:
-        return None, None, None
-
-
-def get_right_leg_landmarks(mp_pose, landmarks, confidence):
-    if check_visibility(landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].visibility,
-                        landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].visibility,
-                        landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].visibility,
-                        confidence):
-        right_hip = [landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].x,
-                     landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].y]
-        right_knee = [landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].x,
-                      landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].y]
-        right_ankle = [landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].x,
-                       landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].y]
-        return right_hip, right_knee, right_ankle
-    else:
-        return None, None, None
-
-
-def get_left_leg_landmarks(mp_pose, landmarks, confidence):
-    if check_visibility(landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].visibility,
-                        landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].visibility,
-                        landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].visibility,
-                        confidence):
-        left_hip = [landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x,
-                    landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y]
-        left_knee = [landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].x,
-                     landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].y]
-        left_ankle = [landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].x,
-                      landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].y]
-        return left_hip, left_knee, left_ankle
-    else:
-        return None, None, None
-
-
-def check_visibility(a, b, c, confidence):
-    return all(x > confidence for x in (a, b, c))
-
-
-def show_angles_in_box(image, left_arm_angle, right_arm_angle, left_leg_angle, right_leg_angle):
-
+def show_angles_in_box(image, l_shldr, r_shldr):
     # Show angles in box
-    if left_arm_angle == -1:
-        left_arm_angle = 'None'
+    if l_shldr == -1:
+        l_shldr = 'None'
     else:
-        left_arm_angle = str("{:.2f}".format(left_arm_angle))
+        l_shldr = str("{:.2f}".format(l_shldr))
 
-    if right_arm_angle == -1:
-        right_arm_angle = 'None'
+    if r_shldr == -1:
+        r_shldr = 'None'
     else:
-        right_arm_angle = str("{:.2f}".format(right_arm_angle))
+        r_shldr = str("{:.2f}".format(r_shldr))
 
-    if left_leg_angle == -1:
-        left_leg_angle = 'None'
-    else:
-        left_leg_angle = str("{:.2f}".format(left_leg_angle))
-
-    if right_leg_angle == -1:
-        right_leg_angle = 'None'
-    else:
-        right_leg_angle = str("{:.2f}".format(right_leg_angle))
-
-    cv2.putText(image, "Left arm angle : " + left_arm_angle,
+    cv2.putText(image, "Left shoulder angle : " + l_shldr,
                 (30, 40),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
-    cv2.putText(image, "Right arm angle : " + right_arm_angle,
+    cv2.putText(image, "Right shoulder angle : " + r_shldr,
                 (30, 60),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
-    cv2.putText(image, "Left angle knee : " + left_leg_angle,
-                (30, 80),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
-    cv2.putText(image, "Right angle knee : " + right_leg_angle,
-                (30, 100),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
+
+
+def plot_pie_charts_shoulders(bad_percentages):
+    labels = ['Good', 'Bad']
+    colors = sns.color_palette('bright')
+
+    # create a subplot for each bad posture percentage
+    fig, axs = plt.subplots(1, len(bad_percentages), figsize=(len(bad_percentages) * 5, 5))
+
+    for i, bad_percentage in enumerate(bad_percentages):
+        good_percentage = 100 - bad_percentage
+        data = [good_percentage, bad_percentage]
+
+        # create pie chart in the i-th subplot
+        axs[i].pie(data, labels=labels, colors=colors, autopct='%.0f%%')
+        if i == 0:
+            axs[i].set_title(f'Right Shoulder Posture')
+        else:
+            axs[i].set_title(f'Left Shoulder Posture')
+
+    plt.show()
+
+
+def plot_pie_charts_trunk():
+    return
+
+
+def recolor_image(image):
+    image.flags.writeable = True
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    return image

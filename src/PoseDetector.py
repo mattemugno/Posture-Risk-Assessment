@@ -1,4 +1,3 @@
-import datetime
 import json
 import logging
 import os
@@ -10,8 +9,9 @@ import matplotlib.pyplot as plt
 import mediapipe as mp
 import numpy as np
 
-from src.utils import get_left_arm_landmarks, get_right_arm_landmarks, get_right_leg_landmarks, get_left_leg_landmarks, \
-    calculate_angle, visualize_angles, set_logger, show_angles_in_box
+from src.VideoCamera import VideoCamera
+from src.config import excluded_landmarks, landmark_to_coords, ARM_ANGLE_THRESHOLD
+from src.utils import calculate_angle, visualize_angles, set_logger, show_angles_in_box, recolor_image
 
 matplotlib.use('TkAgg')
 
@@ -27,7 +27,7 @@ class PoseDetector:
     """
 
     def __init__(self, min_detection_confidence=0.5, min_tracking_confidence=0.5,
-                 enable_segmentation=True, model_complexity=1, sampling_rate=1.0):
+                 enable_segmentation=True, model_complexity=1, sampling_rate=1.0, enable_face_landmarks=False):
         """
         Initializes the PoseDetector instance.
 
@@ -36,14 +36,20 @@ class PoseDetector:
         :arg enable_segmentation: Whether to enable segmentation. Default is True.
         :arg model_complexity: The complexity of the model to be used. Default is 1.
         :arg sampling_rate: The frequency with which angles are detected. Default is 1 second.
+        :arg enable_face_landmarks: Whether to show or not face landmarks. Default is False.
         """
 
         self.min_detection_confidence = min_detection_confidence
         self.min_tracking_confidence = min_tracking_confidence
         self.enable_segmentation = enable_segmentation
+        self.enable_face_landmarks = enable_face_landmarks
         self.model_complexity = model_complexity
+
         self.mp_drawing = mp.solutions.drawing_utils
         self.mp_holistic = mp.solutions.holistic
+        self.custom_style = mp.solutions.drawing_styles.get_default_pose_landmarks_style()
+        self.custom_connections = list(self.mp_holistic.POSE_CONNECTIONS)
+
         self.holistic = self.mp_holistic.Holistic(min_detection_confidence=self.min_detection_confidence,
                                                   min_tracking_confidence=self.min_tracking_confidence,
                                                   enable_segmentation=self.enable_segmentation,
@@ -67,27 +73,31 @@ class PoseDetector:
         """
 
         logging.info("Turning on the camera for finding landmarks")
-        cap = cv2.VideoCapture(device_id)
+        cap = VideoCamera(0)
         start_time = time.time()
         last_update_time = start_time
 
-        while cap.isOpened():
-            ret, frame = cap.read()
+        for landmark in self.mp_holistic.PoseLandmark:
+            if landmark in excluded_landmarks:
+                self.custom_style[landmark] = self.mp_drawing.DrawingSpec(color=(255, 255, 0), thickness=None)
+                self.custom_connections = [connection_tuple for connection_tuple in self.custom_connections
+                                           if landmark.value not in connection_tuple]
+            else:
+                self.custom_style[landmark] = self.mp_drawing.DrawingSpec(color=(255, 0, 0), thickness=2,
+                                                                          circle_radius=2)
 
-            if not ret:
+        while cap.isOpen():
+            success, image = cap.get_frame()
+
+            if not success:
                 print("Ignoring empty camera frame.")
                 continue
-
-            # Recolor image to RGB
-            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            image.flags.writeable = False
 
             # Make detection
             results = self.holistic.process(image)
 
-            # Recolor back to BGR
-            image.flags.writeable = True
-            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            # Recolor image
+            image = recolor_image(image)
 
             try:
 
@@ -95,58 +105,63 @@ class PoseDetector:
                 landmarks = results.pose_landmarks.landmark
                 seg_mask = cv2.cvtColor(results.segmentation_mask, cv2.COLOR_BGR2RGB)
 
-                # Get coordinates
-                left_shoulder, left_elbow, left_wrist = get_left_arm_landmarks(self.mp_holistic, landmarks,
-                                                                               self.min_tracking_confidence)
-                right_shoulder, right_elbow, right_wrist = get_right_arm_landmarks(self.mp_holistic, landmarks,
-                                                                                   self.min_tracking_confidence)
-                right_hip, right_knee, right_ankle = get_right_leg_landmarks(self.mp_holistic, landmarks,
-                                                                             self.min_tracking_confidence)
-                left_hip, left_knee, left_ankle = get_left_leg_landmarks(self.mp_holistic, landmarks,
-                                                                         self.min_tracking_confidence)
+                # Get coordinates of landmarks in frame defining the correspondent class attribute
+                # If the landmarks is not detected, set class attribute to None
+                for landmark in self.mp_holistic.PoseLandmark:
+                    if landmark in landmark_to_coords:
+                        if landmarks[landmark.value].visibility > self.min_detection_confidence:
+                            setattr(self, landmark_to_coords[landmark], [landmarks[landmark.value].x,
+                                                                         landmarks[landmark.value].y])
+                        else:
+                            setattr(self, landmark_to_coords[landmark], None)
 
-                # Calculate angles
-                left_arm_angle = calculate_angle(left_shoulder, left_elbow, left_wrist)
-                right_arm_angle = calculate_angle(right_shoulder, right_elbow, right_wrist)
-                right_leg_angle = calculate_angle(right_hip, right_knee, right_ankle)
-                left_leg_angle = calculate_angle(left_hip, left_knee, left_ankle)
+                # Get shoulders' angles
+                l_shldr = calculate_angle(self.left_elbow, self.left_shoulder, self.left_hip)
+                r_shldr = calculate_angle(self.right_elbow, self.right_shoulder, self.right_hip)
+
+                # Get trunk inclination
+                trunk_incl = calculate_angle(self.left_shoulder, self.left_hip, self.left_knee)
+
+                # neck_incl = calculate_angle()
+                ### neck inclination
 
                 # Visualize angles
-                visualize_angles(image, left_arm_angle, left_elbow)
-                visualize_angles(image, right_arm_angle, right_elbow)
-                visualize_angles(image, right_leg_angle, right_knee)
-                visualize_angles(image, left_leg_angle, left_knee)
+                visualize_angles(image, l_shldr, self.left_shoulder)
+                visualize_angles(image, r_shldr, self.right_shoulder)
+                visualize_angles(image, trunk_incl, self.left_hip)
 
-                cv2.rectangle(image, (20, 20), (220, 110), (0, 0, 0), -1)
+                cv2.rectangle(image, (20, 20), (220, 70), (0, 0, 0), -1)
 
-                show_angles_in_box(image, left_arm_angle, right_arm_angle, left_leg_angle, right_leg_angle)
+                show_angles_in_box(image, l_shldr, r_shldr)
 
                 # Render detections
-                # self.mp_drawing.draw_landmarks(image, results.face_landmarks, self.mp_holistic.FACEMESH_CONTOURS,
-                #                                landmark_drawing_spec=None,
-                #                                connection_drawing_spec=mp.solutions.drawing_styles
-                #                                .get_default_face_mesh_contours_style())
+                if self.enable_face_landmarks:
+                    self.mp_drawing.draw_landmarks(image, results.face_landmarks, self.mp_holistic.FACEMESH_CONTOURS,
+                                                   landmark_drawing_spec=None,
+                                                   connection_drawing_spec=mp.solutions.drawing_styles
+                                                   .get_default_face_mesh_contours_style())
 
-                print(results.pose_landmarks)
-                self.mp_drawing.draw_landmarks(image, results.pose_landmarks, self.mp_holistic.POSE_CONNECTIONS,
-                                               self.mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=2,
-                                                                           circle_radius=2),
-                                               self.mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=2,
-                                                                           circle_radius=2)
-                                               )
+                self.mp_drawing.draw_landmarks(
+                    image,
+                    results.pose_landmarks,
+                    connections=self.custom_connections,
+                    landmark_drawing_spec=self.custom_style,
+                    connection_drawing_spec=self.mp_drawing.DrawingSpec(color=(255, 0, 0), thickness=2,
+                                                                        circle_radius=2)
+                )
 
                 cv2.imshow('Landmarks feed', image)
-                cv2.imshow('Segmentation mask', seg_mask)
+
+                if self.enable_segmentation:
+                    cv2.imshow('Segmentation mask', seg_mask)
 
                 current_time = time.time()
                 if current_time - last_update_time >= self.sampling_rate:
-
                     self.data.append({
                         'timestamp': current_time - start_time,
-                        'left_arm_angle': left_arm_angle,
-                        'right_arm_angle': right_arm_angle,
-                        'right_leg_angle': right_leg_angle,
-                        'left_leg_angle': left_leg_angle
+                        'l_shldr': l_shldr,
+                        'r_shldr': r_shldr,
+                        'trunk_incl': trunk_incl
                     })
 
                     last_update_time = current_time
@@ -159,10 +174,7 @@ class PoseDetector:
                 logging.exception(e)
                 pass
 
-        cap.release()
-        cv2.destroyAllWindows()
-
-    def write_data(self, path_to_save=data_path):
+    def save_data(self, path_to_save=data_path):
         """
         Write data collected from the pose detection to a JSON file.
 
@@ -182,28 +194,22 @@ class PoseDetector:
 
         data = json.load(open(self.data_path, 'r'))
         x = [v['timestamp'] for v in data]
-        y_right_arm = [v['right_arm_angle'] for v in data]
-        y_left_arm = [v['left_arm_angle'] for v in data]
-        y_right_leg = [v['right_leg_angle'] for v in data]
-        y_left_leg = [v['left_leg_angle'] for v in data]
+        y_right_arm = [v['r_shldr'] for v in data]
+        y_left_arm = [v['l_shldr'] for v in data]
+        # trunk = [v['trunk_incl'] for v in data]
 
         plt.style.use('seaborn-v0_8')
         plt.grid(True)
 
-        plt.plot(x, y_right_arm, color='magenta', marker='d', label='Right arm angle', mfc='red', mec='k')
-        plt.plot(x, y_left_arm, color='green', marker='d', label='Left arm angle', mfc='red', mec='k')
-        plt.plot(x, y_right_leg, color='blue', marker='d', label='Right leg angle', mfc='red', mec='k')
-        plt.plot(x, y_left_leg, color='yellow', marker='d', label='Left leg angle', mfc='red', mec='k')
+        plt.plot(x, y_right_arm, color='blue', marker='_', label='Right arm angle', mfc='red', mec='k')
+        plt.plot(x, y_left_arm, color='green', marker='_', label='Left arm angle', mfc='red', mec='k')
 
         plt.xlim(left=0)
         plt.ylim(top=180)
-        plt.axhline(y=45, color='r', linestyle='--', label='Arm threshold')
-        plt.axhline(y=30, color='g', linestyle='--', label='Leg threshold')
+        plt.axhline(y=ARM_ANGLE_THRESHOLD, color='r', linestyle='--', label='Arm threshold')
 
         plt.fill_between(x, y_right_arm, np.maximum(y_right_arm, 45),
                          where=(np.array(y_right_arm) > 45), color='red', alpha=0.3)
-        plt.fill_between(x, y_right_leg, np.maximum(y_right_leg, 45),
-                         where=(np.array(y_right_leg) > 45), color='green', alpha=0.3)
 
         plt.xlabel('Time', fontsize='small')
         plt.ylabel('Angles', fontsize='small')
