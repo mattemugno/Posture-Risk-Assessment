@@ -1,3 +1,4 @@
+import io
 import json
 import logging
 import os
@@ -11,13 +12,13 @@ import numpy as np
 
 from src.VideoCamera import VideoCamera
 from src.config import excluded_landmarks, landmark_to_coords, ARM_ANGLE_THRESHOLD
-from src.utils import calculate_angle, visualize_angles, set_logger, show_angles_in_box, recolor_image
+from src.utils import calculate_angle, visualize_angles, set_logger, show_angles_in_box
 
 matplotlib.use('TkAgg')
 
 set_logger()
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-data_path = os.path.join(base_dir, 'data', 'data.json')
+data_path = os.path.join(base_dir, 'data')
 
 
 class PoseDetector:
@@ -27,7 +28,7 @@ class PoseDetector:
     """
 
     def __init__(self, min_detection_confidence=0.5, min_tracking_confidence=0.5,
-                 enable_segmentation=True, model_complexity=1, sampling_rate=1.0, enable_face_landmarks=False):
+                 enable_segmentation=False, model_complexity=1, sampling_rate=1.0, enable_face_landmarks=False):
         """
         Initializes the PoseDetector instance.
 
@@ -52,30 +53,27 @@ class PoseDetector:
 
         self.holistic = self.mp_holistic.Holistic(min_detection_confidence=self.min_detection_confidence,
                                                   min_tracking_confidence=self.min_tracking_confidence,
-                                                  enable_segmentation=self.enable_segmentation,
+                                                  enable_segmentation=True,
                                                   model_complexity=self.model_complexity
                                                   )
         self.data = []
         self.data_path = data_path
         self.sampling_rate = sampling_rate
 
+        self.cap = VideoCamera(0)
+        self.start_time = time.time()
+        self.last_time_updated = self.start_time
+
         logging.info('PoseDetector instance created.')
 
-    def find_landmarks(self, device_id=0):
+    def find_landmarks(self):
         """
         Turns on the camera and finds the landmarks on the human body using the MediaPipe holistic model.
         It also calculates the angles of the arms and legs and visualizes them on the image. The data is then added
         to a list.
 
-        :param device_id: The ID of the device from which the video is to be captured. Default is 0,
-                which usually corresponds to the built-in webcam
         :return: None
         """
-
-        logging.info("Turning on the camera for finding landmarks")
-        cap = VideoCamera(0)
-        start_time = time.time()
-        last_update_time = start_time
 
         for landmark in self.mp_holistic.PoseLandmark:
             if landmark in excluded_landmarks:
@@ -86,24 +84,22 @@ class PoseDetector:
                 self.custom_style[landmark] = self.mp_drawing.DrawingSpec(color=(255, 0, 0), thickness=2,
                                                                           circle_radius=2)
 
-        while cap.isOpen():
-            success, image = cap.get_frame()
+        if self.cap.isOpen():
+            image, results = self.cap.get_frame(self.holistic)
 
-            if not success:
-                print("Ignoring empty camera frame.")
-                continue
-
-            # Make detection
-            results = self.holistic.process(image)
-
-            # Recolor image
-            image = recolor_image(image)
+            if results.pose_landmarks is None:
+                logging.info("Ignoring empty camera frame.")
+                return None
 
             try:
 
                 # Extract landmarks
                 landmarks = results.pose_landmarks.landmark
-                seg_mask = cv2.cvtColor(results.segmentation_mask, cv2.COLOR_BGR2RGB)
+
+                # Get segmentation mask
+                if self.enable_segmentation:
+                    seg_mask = cv2.cvtColor(results.segmentation_mask, cv2.COLOR_RGB2BGR)
+                    image = seg_mask
 
                 # Get coordinates of landmarks in frame defining the correspondent class attribute
                 # If the landmarks is not detected, set class attribute to None
@@ -150,25 +146,22 @@ class PoseDetector:
                                                                         circle_radius=2)
                 )
 
-                cv2.imshow('Landmarks feed', image)
-
-                if self.enable_segmentation:
-                    cv2.imshow('Segmentation mask', seg_mask)
-
                 current_time = time.time()
-                if current_time - last_update_time >= self.sampling_rate:
+                if current_time - self.last_time_updated >= self.sampling_rate:
                     self.data.append({
-                        'timestamp': current_time - start_time,
+                        'timestamp': current_time - self.start_time,
                         'l_shldr': l_shldr,
                         'r_shldr': r_shldr,
                         'trunk_incl': trunk_incl
                     })
 
-                    last_update_time = current_time
+                    self.last_time_updated = current_time
 
-                if cv2.waitKey(10) & 0xFF == ord('q'):
-                    logging.info("Exit the camera")
-                    break
+                if self.enable_segmentation:
+                    _, png = cv2.imencode('.png', 255*seg_mask)
+                else:
+                    _, png = cv2.imencode('.png', image)
+                return png.tobytes()
 
             except Exception as e:
                 logging.exception(e)
@@ -181,7 +174,7 @@ class PoseDetector:
         :param path_to_save: The path where the data should be saved.
         :return: None
         """
-        with open(path_to_save, 'w') as f:
+        with open(os.path.join(data_path, 'data.json'), 'w') as f:
             logging.info('Save data in %s', path_to_save)
             json.dump(self.data, f)
 
@@ -219,4 +212,11 @@ class PoseDetector:
         plt.tick_params(axis='both', labelsize=7)
 
         plt.legend()
-        plt.show()
+
+        # Instead of showing, save the plot to a BytesIO object
+        img_buffer = io.BytesIO()
+        plt.savefig(img_buffer, format='png')
+        img_buffer.seek(0)
+        plt.close()
+
+        return img_buffer

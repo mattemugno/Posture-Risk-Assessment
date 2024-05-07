@@ -1,3 +1,5 @@
+from threading import Thread
+
 import cv2
 
 
@@ -6,14 +8,15 @@ class VideoCamera(object):
     This class handles camera methods
     """
 
-    def __init__(self, device_id=0):
+    def __init__(self, source=0):
         """
         Initialize the VideoCamera instance.
 
-        :param device_id: int, optional
+        :param source: int, optional
             Camera id. Default is 0, which usually refers to the built-in webcam.
         """
-        self.video = cv2.VideoCapture(device_id)
+        self.video = cv2.VideoCapture(source)
+        self.recording = True
 
     def __del__(self):
         """
@@ -23,24 +26,34 @@ class VideoCamera(object):
         """
 
         self.video.release()
-        cv2.destroyAllWindows()
 
-    def get_frame(self):
+    def get_frame(self, holistic):
         """
-        Retrieve a frame from the video camera.
+        Retrieve a frame from the video camera and process it using the specified holistic detector.
 
-        :return: A tuple (success, image) where:
-                 - success (bool): True if a frame was successfully retrieved from the camera.
-                 - image (numpy.ndarray): The RGB image array representing the retrieved frame.
+        :param holistic: The Holistic object that processes the frame.
+        :return: A tuple (image, results) where:
+                 - image (numpy.ndarray): The BGR image array representing the retrieved frame.
+                 - results: The detection results from the holistic detector.
         """
 
         success, frame = self.video.read()
+
+        if not success:
+            return None, None
 
         # Recolor image to RGB
         image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         image.flags.writeable = False
 
-        return success, image
+        # Make detection
+        results = holistic.process(image)
+
+        # Recolor image to BGR
+        image.flags.writeable = True
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+        return image, results
 
     def isOpen(self):
         """

@@ -1,0 +1,28 @@
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8  offset-lg-2">
+
+
+            <h2 class="mt-5">Live Stream</h2>
+            <form action="{{ url_for('tasks') }}" method="post">
+                <input name="stop" type="submit" value="Stop/Start"/>
+                <input name="segmask" type="submit" value="Segmentation Mask"/>
+                <input name="save" type="submit" value="Save Data"/>
+            </form>
+            <form action="{{ url_for('stats') }}" method="get">
+                <input name="plot" type="submit" value="Plot Posture"/>
+                <input name="piecharts" type="submit" value="Get Pie Charts"/>
+            </form>
+            <img height="80%" src="{{ url_for('video_feed') }}">
+            <h3 style="font-family:courier;">Instructions:</h3>
+            <ol style="font-family:courier;">
+                <li>Stop/Start--Toggle between stop or start live streaming</li>
+                <li>Segmentation--Toggle between segmentation mask and RGB output</li>
+				<li>Plot Posture--Plot Shoulders and Trunk joint angles in time</li>
+				<li>Get Pie Charts--Show Pie Charts</li>
+            </ol>
+        </div>
+    </div>
+</div>
+</body>

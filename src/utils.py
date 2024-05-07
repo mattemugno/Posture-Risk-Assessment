@@ -4,7 +4,7 @@ import math
 import cv2
 import numpy as np
 import seaborn as sns
-from matplotlib import pyplot as plt, patches
+from matplotlib import pyplot as plt
 
 
 def set_logger():
@@ -93,9 +93,3 @@ def plot_pie_charts_shoulders(bad_percentages):
 
 def plot_pie_charts_trunk():
     return
-
-
-def recolor_image(image):
-    image.flags.writeable = True
-    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-    return image
