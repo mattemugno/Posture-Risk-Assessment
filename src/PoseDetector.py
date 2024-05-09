@@ -186,7 +186,7 @@ class PoseDetector:
         """
         Plot posture angles from data.json
 
-        :return: None
+        :return: BytesIO object containing the plot image
         """
         with open(os.path.join(self.data_path, 'data.json'), 'r') as file:
             data = json.load(file)
@@ -195,31 +195,30 @@ class PoseDetector:
             y_left_arm = [v['l_shldr'] for v in data]
             trunk = [v['trunk_incl'] for v in data]
 
-            plt.style.use('seaborn-v0_8')
             plt.switch_backend('agg')
 
-            fig, axs = plt.subplots(1, 3, sharey=True, figsize=(15, 5))
+            fig, axs = plt.subplots(3, 1, sharex=True)
 
-            axs[0].plot(x, y_right_arm, color='blue', marker='_', label='Right shoulder angle', mfc='red', mec='k')
-            axs[0].set_xlabel('Time')
+            axs[0].plot(x, y_right_arm, color='blue', label='Right shoulder angle', mfc='red')
             axs[0].set_ylabel('Angles')
             axs[0].legend()
             axs[0].grid(True)
 
-            axs[1].plot(x, y_left_arm, color='green', marker='_', label='Left shoulder angle', mfc='red', mec='k')
-            axs[1].set_xlabel('Time', fontsize='small')
-            axs[1].legend(fontsize='small')
+            axs[1].plot(x, y_left_arm, color='green', label='Left shoulder angle')
+            axs[1].set_ylabel('Angles')
+            axs[1].legend()
             axs[1].grid(True)
 
-            axs[2].plot(x, trunk, color='red', marker='_', label='Trunk angle', mfc='red', mec='k')
+            axs[2].plot(x, trunk, color='red', label='Trunk angle')
             axs[2].set_xlabel('Time')
+            axs[2].set_ylabel('Angles')
             axs[2].legend()
             axs[2].grid(True)
 
             plt.xlim(left=0)
             plt.ylim(top=180)
 
-            plt.suptitle('Angles in time')
+            plt.suptitle('Angles over Time', y=0.92)
 
             img_buffer = io.BytesIO()
             plt.savefig(img_buffer, format='png')

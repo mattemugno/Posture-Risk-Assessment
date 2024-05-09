@@ -17,47 +17,46 @@
 
     <!-- Custom CSS -->
     <style>
-        /* Stili per mantenere le dimensioni di #videoFeed */
         #videoFeed {
-            width: 100%; /* Riduce la larghezza del video per spostarlo a sinistra */
-            height: auto; /* Altezza proporzionale alla larghezza */
+            width: 100%;
+            height: auto;
             border-radius: 10px;
             padding-bottom: 15px;
-            margin-right: 20px; /* Aggiunge spazio a destra del video */
+            margin-right: 20px
         }
 
-        /* Stili per #plot e #piecharts per renderli più grandi e centrati */
         #plot,
         #piecharts {
-            max-width: 130%;
+            max-width: 100%;
             height: auto;
             display: block;
-            margin: 20px auto; /* Centra gli elementi orizzontalmente con spazio sopra e sotto */
+            margin: auto;
             border-radius: 10px;
-            padding: 15px; /* Aggiunge spazio intorno all'immagine */
         }
 
-        /* Stile per l'intero container */
         .container {
             max-width: 100%;
-            padding: 0 20px; /* Aggiunge spazio ai lati del container */
+            padding: 0 10px; /* Aggiunge spazio ai lati del container */
         }
 
         /* Stile per separare il video e i bottoni */
         .video-container {
             display: flex;
             flex-wrap: wrap;
-            justify-content: space-between;
+            justify-content: center;
             align-items: flex-start;
         }
 
+        h2.text-center {
+            margin-bottom: 20px;
+        }
         .button-group {
             flex-basis: 20%; /* Imposta la larghezza dei bottoni */
             max-width: 20%; /* Imposta larghezza massima per i bottoni */
-            padding-left: 20px; /* Aggiunge spazio a sinistra dei bottoni */
+            padding-left: 10px; /* Aggiunge spazio a sinistra dei bottoni */
+            padding-top: 10%;
         }
 
-        /* Stile per i bottoni */
         .btn-custom {
             width: 100%;
             margin-bottom: 10px; /* Aggiunge spazio tra i bottoni */
