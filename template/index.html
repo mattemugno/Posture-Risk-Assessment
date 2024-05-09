@@ -1,28 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Meta Tags -->
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+
+    <!-- CSS Links -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- JavaScript Links -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <title>Pose Estimation</title>
+
+    <!-- Custom CSS -->
+    <style>
+        /* Stili per mantenere le dimensioni di #videoFeed */
+        #videoFeed {
+            width: 100%; /* Riduce la larghezza del video per spostarlo a sinistra */
+            height: auto; /* Altezza proporzionale alla larghezza */
+            border-radius: 10px;
+            padding-bottom: 15px;
+            margin-right: 20px; /* Aggiunge spazio a destra del video */
+        }
+
+        /* Stili per #plot e #piecharts per renderli più grandi e centrati */
+        #plot,
+        #piecharts {
+            max-width: 130%;
+            height: auto;
+            display: block;
+            margin: 20px auto; /* Centra gli elementi orizzontalmente con spazio sopra e sotto */
+            border-radius: 10px;
+            padding: 15px; /* Aggiunge spazio intorno all'immagine */
+        }
+
+        /* Stile per l'intero container */
+        .container {
+            max-width: 100%;
+            padding: 0 20px; /* Aggiunge spazio ai lati del container */
+        }
+
+        /* Stile per separare il video e i bottoni */
+        .video-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .button-group {
+            flex-basis: 20%; /* Imposta la larghezza dei bottoni */
+            max-width: 20%; /* Imposta larghezza massima per i bottoni */
+            padding-left: 20px; /* Aggiunge spazio a sinistra dei bottoni */
+        }
+
+        /* Stile per i bottoni */
+        .btn-custom {
+            width: 100%;
+            margin-bottom: 10px; /* Aggiunge spazio tra i bottoni */
+        }
+    </style>
+
+</head>
 <body>
 <div class="container">
+    <!-- Main Content -->
     <div class="row">
-        <div class="col-lg-8  offset-lg-2">
+        <div class="col-lg-8 offset-lg-2 mt-5">
+            <h2 class="text-center">Posture Risk Assessment</h2>
 
+            <!-- Video Feed and Controls -->
+            <div class="video-container">
+                <!-- Video Feed (occupa 2/3 della larghezza) -->
+                <div class="col-lg-8">
+                    <img id="videoFeed" src="{{ url_for('video_feed') }}">
+                </div>
 
-            <h2 class="mt-5">Live Stream</h2>
-            <form action="{{ url_for('tasks') }}" method="post">
-                <input name="stop" type="submit" value="Stop/Start"/>
-                <input name="segmask" type="submit" value="Segmentation Mask"/>
-                <input name="save" type="submit" value="Save Data"/>
-            </form>
-            <form action="{{ url_for('stats') }}" method="get">
-                <input name="plot" type="submit" value="Plot Posture"/>
-                <input name="piecharts" type="submit" value="Get Pie Charts"/>
-            </form>
-            <img height="80%" src="{{ url_for('video_feed') }}">
-            <h3 style="font-family:courier;">Instructions:</h3>
-            <ol style="font-family:courier;">
-                <li>Stop/Start--Toggle between stop or start live streaming</li>
-                <li>Segmentation--Toggle between segmentation mask and RGB output</li>
-				<li>Plot Posture--Plot Shoulders and Trunk joint angles in time</li>
-				<li>Get Pie Charts--Show Pie Charts</li>
-            </ol>
+                <!-- Buttons and Plots (occupa 1/3 della larghezza) -->
+                <div class="col-lg-4 button-group">
+                    <form action="{{ url_for('tasks') }}" method="post">
+                        <input class="btn-custom" name="stop" type="submit" value="Stop/Start"/>
+                        <input class="btn-custom" name="segmask" type="submit" value="Segmentation Mask"/>
+                        <input class="btn-custom" name="save" type="submit" value="Save Data"/>
+                    </form>
+
+                    <form action="{{ url_for('plot_posture_in_time') }}" id="plotForm" method="get">
+                        <input class="btn-custom" id="plotButton" name="plot" type="submit" value="Plot Posture"/>
+                    </form>
+
+                    <form action="{{ url_for('plot_pie_charts') }}" method="get">
+                        <input class="btn-custom" id="piechartsButton" name="piecharts" type="submit"
+                               value="Get Pie Charts"/>
+                    </form>
+
+                    <!-- Placeholder for Plot and Piecharts (Initially Hidden) -->
+                    <div>
+                        <img id="plot" src="{{ url_for('plot_posture_in_time') }}" style="display: none;">
+                        <img id="piecharts" src="{{ url_for('plot_pie_charts') }}" style="display: none;">
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+    $(document).ready(function () {
+        var plotVisible = false;
+        var piechartsVisible = false;
+
+        $("#plotButton").click(function (e) {
+            e.preventDefault();
+            if (plotVisible) {
+                $("#videoFeed").show();
+                $("#plot").hide();
+                plotVisible = false;
+            } else {
+                $("#videoFeed").hide();
+                $("#plot").show();
+                $("#piecharts").hide(); // Nasconde i piecharts quando si mostra il plot
+                plotVisible = true;
+                piechartsVisible = false;
+                // Posiziona il plot sotto il video
+                $("#plot").insertAfter("#videoFeed");
+            }
+        });
+
+        $("#piechartsButton").click(function (e) {
+            e.preventDefault();
+            if (piechartsVisible) {
+                $("#videoFeed").show();
+                $("#piecharts").hide();
+                piechartsVisible = false;
+            } else {
+                $("#videoFeed").hide();
+                $("#piecharts").show();
+                $("#plot").hide(); // Nasconde il plot quando si mostrano i piecharts
+                piechartsVisible = true;
+                plotVisible = false;
+                // Posiziona i piecharts sotto il video
+                $("#piecharts").insertAfter("#videoFeed");
+            }
+        });
+    });
+</script>
+
 </body>
+</html>

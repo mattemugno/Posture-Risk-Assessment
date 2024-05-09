@@ -5,20 +5,17 @@ import os
 import time
 
 import cv2
-import matplotlib
 import matplotlib.pyplot as plt
 import mediapipe as mp
-import numpy as np
 
 from src.VideoCamera import VideoCamera
-from src.config import excluded_landmarks, landmark_to_coords, ARM_ANGLE_THRESHOLD
+from src.config import excluded_landmarks, landmark_to_coords
 from src.utils import calculate_angle, visualize_angles, set_logger, show_angles_in_box
-
-matplotlib.use('TkAgg')
 
 set_logger()
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 data_path = os.path.join(base_dir, 'data')
+model_path = os.path.join(base_dir, 'src', 'pose_landmarker.task')
 
 
 class PoseDetector:
@@ -28,7 +25,7 @@ class PoseDetector:
     """
 
     def __init__(self, min_detection_confidence=0.5, min_tracking_confidence=0.5,
-                 enable_segmentation=False, model_complexity=1, sampling_rate=1.0, enable_face_landmarks=False):
+                 enable_segmentation=False, model_complexity=1, sampling_rate=1, enable_face_landmarks=False):
         """
         Initializes the PoseDetector instance.
 
@@ -75,19 +72,12 @@ class PoseDetector:
         :return: None
         """
 
-        for landmark in self.mp_holistic.PoseLandmark:
-            if landmark in excluded_landmarks:
-                self.custom_style[landmark] = self.mp_drawing.DrawingSpec(color=(255, 255, 0), thickness=None)
-                self.custom_connections = [connection_tuple for connection_tuple in self.custom_connections
-                                           if landmark.value not in connection_tuple]
-            else:
-                self.custom_style[landmark] = self.mp_drawing.DrawingSpec(color=(255, 0, 0), thickness=2,
-                                                                          circle_radius=2)
+        self.set_custom_landmark()
 
         if self.cap.isOpen():
             image, results = self.cap.get_frame(self.holistic)
 
-            if results.pose_landmarks is None:
+            if results is None:
                 logging.info("Ignoring empty camera frame.")
                 return None
 
@@ -111,40 +101,19 @@ class PoseDetector:
                         else:
                             setattr(self, landmark_to_coords[landmark], None)
 
-                # Get shoulders' angles
-                l_shldr = calculate_angle(self.left_elbow, self.left_shoulder, self.left_hip)
-                r_shldr = calculate_angle(self.right_elbow, self.right_shoulder, self.right_hip)
-
-                # Get trunk inclination
-                trunk_incl = calculate_angle(self.left_shoulder, self.left_hip, self.left_knee)
-
-                # neck_incl = calculate_angle()
-                ### neck inclination
+                # Get joint angles
+                l_shldr, r_shldr, trunk_incl = self.get_angles()
 
                 # Visualize angles
                 visualize_angles(image, l_shldr, self.left_shoulder)
                 visualize_angles(image, r_shldr, self.right_shoulder)
                 visualize_angles(image, trunk_incl, self.left_hip)
 
-                cv2.rectangle(image, (20, 20), (220, 70), (0, 0, 0), -1)
+                cv2.rectangle(image, (20, 20), (220, 90), (0, 0, 0), -1)
 
-                show_angles_in_box(image, l_shldr, r_shldr)
+                show_angles_in_box(image, l_shldr, r_shldr, trunk_incl)
 
-                # Render detections
-                if self.enable_face_landmarks:
-                    self.mp_drawing.draw_landmarks(image, results.face_landmarks, self.mp_holistic.FACEMESH_CONTOURS,
-                                                   landmark_drawing_spec=None,
-                                                   connection_drawing_spec=mp.solutions.drawing_styles
-                                                   .get_default_face_mesh_contours_style())
-
-                self.mp_drawing.draw_landmarks(
-                    image,
-                    results.pose_landmarks,
-                    connections=self.custom_connections,
-                    landmark_drawing_spec=self.custom_style,
-                    connection_drawing_spec=self.mp_drawing.DrawingSpec(color=(255, 0, 0), thickness=2,
-                                                                        circle_radius=2)
-                )
+                self.draw_landmarks(image, results)
 
                 current_time = time.time()
                 if current_time - self.last_time_updated >= self.sampling_rate:
@@ -158,7 +127,7 @@ class PoseDetector:
                     self.last_time_updated = current_time
 
                 if self.enable_segmentation:
-                    _, png = cv2.imencode('.png', 255*seg_mask)
+                    _, png = cv2.imencode('.png', 255 * seg_mask)
                 else:
                     _, png = cv2.imencode('.png', image)
                 return png.tobytes()
@@ -166,6 +135,41 @@ class PoseDetector:
             except Exception as e:
                 logging.exception(e)
                 pass
+
+    def get_angles(self):
+        # Get shoulders' angles
+        l_shldr = calculate_angle(self.left_elbow, self.left_shoulder, self.left_hip)
+        r_shldr = calculate_angle(self.right_elbow, self.right_shoulder, self.right_hip)
+        # Get trunk inclination
+        trunk_incl = calculate_angle(self.left_shoulder, self.left_hip, self.left_knee)
+        return l_shldr, r_shldr, trunk_incl
+
+    def set_custom_landmark(self):
+        for landmark in self.mp_holistic.PoseLandmark:
+            if landmark in excluded_landmarks:
+                self.custom_style[landmark] = self.mp_drawing.DrawingSpec(color=(255, 255, 0), thickness=None)
+                self.custom_connections = [connection_tuple for connection_tuple in self.custom_connections
+                                           if landmark.value not in connection_tuple]
+            else:
+                self.custom_style[landmark] = self.mp_drawing.DrawingSpec(color=(255, 0, 0), thickness=2,
+                                                                          circle_radius=2)
+
+    def draw_landmarks(self, image, results):
+        # Render detections
+
+        if self.enable_face_landmarks:
+            self.mp_drawing.draw_landmarks(image, results.face_landmarks, self.mp_holistic.FACEMESH_CONTOURS,
+                                           landmark_drawing_spec=None,
+                                           connection_drawing_spec=mp.solutions.drawing_styles
+                                           .get_default_face_mesh_contours_style())
+        self.mp_drawing.draw_landmarks(
+            image,
+            results.pose_landmarks,
+            connections=self.custom_connections,
+            landmark_drawing_spec=self.custom_style,
+            connection_drawing_spec=self.mp_drawing.DrawingSpec(color=(255, 0, 0), thickness=2,
+                                                                circle_radius=2)
+        )
 
     def save_data(self, path_to_save=data_path):
         """
@@ -184,39 +188,44 @@ class PoseDetector:
 
         :return: None
         """
+        with open(os.path.join(self.data_path, 'data.json'), 'r') as file:
+            data = json.load(file)
+            x = [v['timestamp'] for v in data]
+            y_right_arm = [v['r_shldr'] for v in data]
+            y_left_arm = [v['l_shldr'] for v in data]
+            trunk = [v['trunk_incl'] for v in data]
 
-        data = json.load(open(self.data_path, 'r'))
-        x = [v['timestamp'] for v in data]
-        y_right_arm = [v['r_shldr'] for v in data]
-        y_left_arm = [v['l_shldr'] for v in data]
-        # trunk = [v['trunk_incl'] for v in data]
+            plt.style.use('seaborn-v0_8')
+            plt.switch_backend('agg')
 
-        plt.style.use('seaborn-v0_8')
-        plt.grid(True)
+            fig, axs = plt.subplots(1, 3, sharey=True, figsize=(15, 5))
 
-        plt.plot(x, y_right_arm, color='blue', marker='_', label='Right arm angle', mfc='red', mec='k')
-        plt.plot(x, y_left_arm, color='green', marker='_', label='Left arm angle', mfc='red', mec='k')
+            axs[0].plot(x, y_right_arm, color='blue', marker='_', label='Right shoulder angle', mfc='red', mec='k')
+            axs[0].set_xlabel('Time')
+            axs[0].set_ylabel('Angles')
+            axs[0].legend()
+            axs[0].grid(True)
 
-        plt.xlim(left=0)
-        plt.ylim(top=180)
-        plt.axhline(y=ARM_ANGLE_THRESHOLD, color='r', linestyle='--', label='Arm threshold')
+            axs[1].plot(x, y_left_arm, color='green', marker='_', label='Left shoulder angle', mfc='red', mec='k')
+            axs[1].set_xlabel('Time', fontsize='small')
+            axs[1].legend(fontsize='small')
+            axs[1].grid(True)
 
-        plt.fill_between(x, y_right_arm, np.maximum(y_right_arm, 45),
-                         where=(np.array(y_right_arm) > 45), color='red', alpha=0.3)
+            axs[2].plot(x, trunk, color='red', marker='_', label='Trunk angle', mfc='red', mec='k')
+            axs[2].set_xlabel('Time')
+            axs[2].legend()
+            axs[2].grid(True)
 
-        plt.xlabel('Time', fontsize='small')
-        plt.ylabel('Angles', fontsize='small')
+            plt.xlim(left=0)
+            plt.ylim(top=180)
 
-        plt.title('Angles in time')
-        plt.legend(fontsize='small')
-        plt.tick_params(axis='both', labelsize=7)
+            plt.suptitle('Angles in time')
 
-        plt.legend()
+            img_buffer = io.BytesIO()
+            plt.savefig(img_buffer, format='png')
+            img_buffer.seek(0)
+            plt.close()
 
-        # Instead of showing, save the plot to a BytesIO object
-        img_buffer = io.BytesIO()
-        plt.savefig(img_buffer, format='png')
-        img_buffer.seek(0)
-        plt.close()
+            return img_buffer
 
-        return img_buffer
+

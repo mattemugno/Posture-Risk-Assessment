@@ -1,10 +1,12 @@
+import io
 import logging
 import math
+import sys
 
 import cv2
 import numpy as np
 import seaborn as sns
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 
 
 def set_logger():
@@ -13,7 +15,7 @@ def set_logger():
         format="%(asctime)s [%(levelname)s] %(message)s",
         handlers=[
             logging.FileHandler("../logs/app.log", mode='w'),
-            # logging.StreamHandler(sys.stdout)
+            logging.StreamHandler(sys.stdout)
         ]
     )
 
@@ -50,7 +52,7 @@ def findDistance(x1, y1, x2, y2):
     return dist
 
 
-def show_angles_in_box(image, l_shldr, r_shldr):
+def show_angles_in_box(image, l_shldr, r_shldr, trunk_incl):
     # Show angles in box
     if l_shldr == -1:
         l_shldr = 'None'
@@ -62,11 +64,19 @@ def show_angles_in_box(image, l_shldr, r_shldr):
     else:
         r_shldr = str("{:.2f}".format(r_shldr))
 
-    cv2.putText(image, "Left shoulder angle : " + l_shldr,
+    if trunk_incl == -1:
+        trunk_incl = 'None'
+    else:
+        trunk_incl = str("{:.2f}".format(trunk_incl))
+
+    cv2.putText(image, "Left shoulder angle: " + l_shldr,
                 (30, 40),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
-    cv2.putText(image, "Right shoulder angle : " + r_shldr,
+    cv2.putText(image, "Right shoulder angle: " + r_shldr,
                 (30, 60),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
+    cv2.putText(image, "Trunk inclination: " + trunk_incl,
+                (30, 80),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
 
 
@@ -74,8 +84,10 @@ def plot_pie_charts_shoulders(bad_percentages):
     labels = ['Good', 'Bad']
     colors = sns.color_palette('bright')
 
+    plt.switch_backend('agg')
+
     # create a subplot for each bad posture percentage
-    fig, axs = plt.subplots(1, len(bad_percentages), figsize=(len(bad_percentages) * 5, 5))
+    fig, axs = plt.subplots(1, len(bad_percentages), figsize=(len(bad_percentages) * 3, 3))
 
     for i, bad_percentage in enumerate(bad_percentages):
         good_percentage = 100 - bad_percentage
@@ -88,7 +100,12 @@ def plot_pie_charts_shoulders(bad_percentages):
         else:
             axs[i].set_title(f'Left Shoulder Posture')
 
-    plt.show()
+    img_buffer = io.BytesIO()
+    plt.savefig(img_buffer, format='png')
+    img_buffer.seek(0)
+    plt.close()
+
+    return img_buffer
 
 
 def plot_pie_charts_trunk():

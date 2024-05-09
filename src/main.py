@@ -1,9 +1,11 @@
 import os
+import threading
 
 from flask import Flask, Response, render_template, request
 
 from src.PoseDetector import PoseDetector
 from src.PostureEvaluation import PostureEvaluation
+from src.utils import plot_pie_charts_shoulders
 
 device_id = 0
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
@@ -11,7 +13,6 @@ template_folder = os.path.join(base_dir, 'template')
 
 app = Flask(__name__, template_folder=template_folder)
 pose = PoseDetector(enable_face_landmarks=False)
-eval_posture = PostureEvaluation(os.path.join(pose.data_path, 'data.json'))
 
 
 @app.route('/')
@@ -42,14 +43,15 @@ def tasks():
     return render_template('index.html')
 
 
-@app.route('/stats', methods=['POST', 'GET'])
-def stats():
-    if request.method == 'GET':
-        if request.form.get('plot'):
-            return Response(pose.plot_posture(), mimetype='image/png')
-    elif request.method == 'POST':
-        return render_template('index.html')
-    return render_template('index.html')
+@app.route('/plot')
+def plot_posture_in_time():
+    return Response(pose.plot_posture(), mimetype='image/png')
+
+
+@app.route('/piecharts')
+def plot_pie_charts():
+    eval_posture = PostureEvaluation(os.path.join(pose.data_path, 'data.json'))
+    return Response(plot_pie_charts_shoulders(eval_posture.get_percentage_shoulders()), mimetype='image/png')
 
 
 def gen(pose_detector):
