@@ -50,6 +50,7 @@
         h2.text-center {
             margin-bottom: 20px;
         }
+
         .button-group {
             flex-basis: 20%; /* Imposta la larghezza dei bottoni */
             max-width: 20%; /* Imposta larghezza massima per i bottoni */
@@ -97,8 +98,10 @@
 
                     <!-- Placeholder for Plot and Piecharts (Initially Hidden) -->
                     <div>
-                        <img id="plot" src="{{ url_for('plot_posture_in_time') }}" style="display: none;">
-                        <img id="piecharts" src="{{ url_for('plot_pie_charts') }}" style="display: none;">
+                        <img id="plot" src="{{ url_for('plot_posture_in_time') }}"
+                             style="display: none; width: 100%; margin-top: 20px;">
+                        <img id="piecharts" src="{{ url_for('plot_pie_charts') }}"
+                             style="display: none; width: 100%; margin-top: 20px;">
                     </div>
                 </div>
             </div>

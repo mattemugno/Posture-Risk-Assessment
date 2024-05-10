@@ -1,12 +1,9 @@
-import io
 import logging
 import math
 import sys
 
 import cv2
 import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
 
 
 def set_logger():
@@ -78,35 +75,3 @@ def show_angles_in_box(image, l_shldr, r_shldr, trunk_incl):
     cv2.putText(image, "Trunk inclination: " + trunk_incl,
                 (30, 80),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
-
-
-def plot_pie_charts_shoulders(bad_percentages):
-    labels = ['Good', 'Bad']
-    colors = sns.color_palette('bright')
-
-    plt.switch_backend('agg')
-
-    # create a subplot for each bad posture percentage
-    fig, axs = plt.subplots(1, len(bad_percentages), figsize=(len(bad_percentages) * 3, 3))
-
-    for i, bad_percentage in enumerate(bad_percentages):
-        good_percentage = 100 - bad_percentage
-        data = [good_percentage, bad_percentage]
-
-        # create pie chart in the i-th subplot
-        axs[i].pie(data, labels=labels, colors=colors, autopct='%.0f%%')
-        if i == 0:
-            axs[i].set_title(f'Right Shoulder Posture')
-        else:
-            axs[i].set_title(f'Left Shoulder Posture')
-
-    img_buffer = io.BytesIO()
-    plt.savefig(img_buffer, format='png')
-    img_buffer.seek(0)
-    plt.close()
-
-    return img_buffer
-
-
-def plot_pie_charts_trunk():
-    return
