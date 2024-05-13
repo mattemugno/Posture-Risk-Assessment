@@ -1,5 +1,7 @@
 import cv2
 
+from src.utils import rescale_frame
+
 
 class VideoCamera(object):
     """
@@ -14,6 +16,8 @@ class VideoCamera(object):
             Camera id. Default is 0, which usually refers to the built-in webcam.
         """
         self.video = cv2.VideoCapture(source)
+        self.width = int(self.video.get(cv2.CAP_PROP_FRAME_WIDTH) + 0.5)
+        self.height = int(self.video.get(cv2.CAP_PROP_FRAME_HEIGHT) + 0.5)
         self.recording = True
 
     def __del__(self):
@@ -39,6 +43,9 @@ class VideoCamera(object):
 
         if not success:
             return None, None
+
+        if frame is not None:
+            frame = rescale_frame(frame, percent=125)
 
         # Recolor image to RGB
         image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)

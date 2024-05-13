@@ -18,7 +18,7 @@ def set_logger():
 
 
 def visualize_angles(image, angle, joint):
-    if angle == -1:
+    if angle is None:
         pass
     else:
         cv2.putText(image, str(angle),
@@ -29,7 +29,7 @@ def visualize_angles(image, angle, joint):
 
 def calculate_angle(a, b, c):
     if a is None or b is None or c is None:
-        return -1
+        return None
 
     a = np.array(a)  # First
     b = np.array(b)  # Mid
@@ -49,19 +49,26 @@ def findDistance(x1, y1, x2, y2):
     return dist
 
 
+def rescale_frame(frame, percent=50):
+    width = int(frame.shape[1] * percent / 100)
+    height = int(frame.shape[0] * percent / 100)
+    dim = (width, height)
+    return cv2.resize(frame, dim, interpolation=cv2.INTER_AREA)
+
+
 def show_angles_in_box(image, l_shldr, r_shldr, trunk_incl):
     # Show angles in box
-    if l_shldr == -1:
+    if l_shldr is None:
         l_shldr = 'None'
     else:
         l_shldr = str("{:.2f}".format(l_shldr))
 
-    if r_shldr == -1:
+    if r_shldr is None:
         r_shldr = 'None'
     else:
         r_shldr = str("{:.2f}".format(r_shldr))
 
-    if trunk_incl == -1:
+    if trunk_incl is None:
         trunk_incl = 'None'
     else:
         trunk_incl = str("{:.2f}".format(trunk_incl))

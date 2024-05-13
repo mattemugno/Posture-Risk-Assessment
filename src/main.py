@@ -16,7 +16,7 @@ class PoseManager:
 
     def create_pose_detector(self):
         if self.pose is None:
-            self.pose = PoseDetector(enable_face_landmarks=False)
+            self.pose = PoseDetector(model_complexity=1)
 
     def destroy_pose_detector(self):
         if self.pose is not None:
@@ -57,19 +57,18 @@ def tasks():
 @app.route('/plot')
 def plot_posture_in_time():
     if pose_manager.pose is None:
-        return None
-    else:
-        return Response(pose_manager.pose.plot_posture(), mimetype='image/png')
+        return "Pose detector not initialized"
+    eval_posture = PostureEvaluation(os.path.join(pose_manager.pose.data_path, 'data.json'))
+    return Response(eval_posture.plot_posture(), mimetype='image/png')
 
 
 @app.route('/piecharts')
 def plot_pie_charts():
     if pose_manager.pose is None:
-        return None
-    else:
-        eval_posture = PostureEvaluation(os.path.join(pose_manager.pose.data_path, 'data.json'))
-        eval_posture.calculate_percentages()
-        return Response(eval_posture.plot_pie_charts(), mimetype='image/png')
+        return "Pose detector not initialized"
+    eval_posture = PostureEvaluation(os.path.join(pose_manager.pose.data_path, 'data.json'))
+    eval_posture.calculate_percentages()
+    return Response(eval_posture.plot_pie_charts(), mimetype='image/png')
 
 
 def gen():

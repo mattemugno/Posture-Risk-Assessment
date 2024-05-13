@@ -31,7 +31,7 @@ class PoseDetector:
 
         :arg min_detection_confidence: The minimum detection confidence. Default is 0.5.
         :arg min_tracking_confidence: The minimum tracking confidence. Default is 0.5.
-        :arg enable_segmentation: Whether to enable segmentation. Default is True.
+        :arg enable_segmentation: Whether to enable segmentation. Default is False.
         :arg model_complexity: The complexity of the model to be used. Default is 1.
         :arg sampling_rate: The frequency with which angles are detected. Default is 1 second.
         :arg enable_face_landmarks: Whether to show or not face landmarks. Default is False.
@@ -77,7 +77,7 @@ class PoseDetector:
         if self.cap.isOpen():
             image, results = self.cap.get_frame(self.holistic)
 
-            if results is None:
+            if results.pose_landmarks is None:
                 logging.info("Ignoring empty camera frame.")
                 return None
 
@@ -96,8 +96,8 @@ class PoseDetector:
                 for landmark in self.mp_holistic.PoseLandmark:
                     if landmark in landmark_to_coords:
                         if landmarks[landmark.value].visibility > self.min_detection_confidence:
-                            setattr(self, landmark_to_coords[landmark], [landmarks[landmark.value].x,
-                                                                         landmarks[landmark.value].y])
+                            setattr(self, landmark_to_coords[landmark], [landmarks[landmark.value].x * self.cap.width,
+                                                                         landmarks[landmark.value].y * self.cap.height])
                         else:
                             setattr(self, landmark_to_coords[landmark], None)
 
@@ -139,9 +139,19 @@ class PoseDetector:
     def get_angles(self):
         # Get shoulders' angles
         l_shldr = calculate_angle(self.left_elbow, self.left_shoulder, self.left_hip)
+        if l_shldr is not None:
+            l_shldr = round(l_shldr, 2)
+
         r_shldr = calculate_angle(self.right_elbow, self.right_shoulder, self.right_hip)
+        if r_shldr is not None:
+            r_shldr = round(r_shldr, 2)
+
         # Get trunk inclination
         trunk_incl = calculate_angle(self.left_shoulder, self.left_hip, self.left_knee)
+        if trunk_incl is not None:
+            trunk_incl = 180 - trunk_incl
+            trunk_incl = round(trunk_incl, 2)
+
         return l_shldr, r_shldr, trunk_incl
 
     def set_custom_landmark(self):
@@ -159,7 +169,7 @@ class PoseDetector:
 
         if self.enable_face_landmarks:
             self.mp_drawing.draw_landmarks(image, results.face_landmarks, self.mp_holistic.FACEMESH_CONTOURS,
-                                           landmark_drawing_spec=None,
+                                           # landmark_drawing_spec=None,
                                            connection_drawing_spec=mp.solutions.drawing_styles
                                            .get_default_face_mesh_contours_style())
         self.mp_drawing.draw_landmarks(
@@ -181,50 +191,5 @@ class PoseDetector:
         with open(os.path.join(data_path, 'data.json'), 'w') as f:
             logging.info('Save data in %s', path_to_save)
             json.dump(self.data, f)
-
-    def plot_posture(self):
-        """
-        Plot posture angles from data.json
-
-        :return: BytesIO object containing the plot image
-        """
-        with open(os.path.join(self.data_path, 'data.json'), 'r') as file:
-            data = json.load(file)
-            x = [v['timestamp'] for v in data]
-            y_right_arm = [v['r_shldr'] for v in data]
-            y_left_arm = [v['l_shldr'] for v in data]
-            trunk = [v['trunk_incl'] for v in data]
-
-            plt.switch_backend('agg')
-
-            fig, axs = plt.subplots(3, 1, sharex=True)
-
-            axs[0].plot(x, y_right_arm, color='blue', label='Right shoulder angle', mfc='red')
-            axs[0].set_ylabel('Angles')
-            axs[0].legend()
-            axs[0].grid(True)
-
-            axs[1].plot(x, y_left_arm, color='green', label='Left shoulder angle')
-            axs[1].set_ylabel('Angles')
-            axs[1].legend()
-            axs[1].grid(True)
-
-            axs[2].plot(x, trunk, color='red', label='Trunk angle')
-            axs[2].set_xlabel('Time')
-            axs[2].set_ylabel('Angles')
-            axs[2].legend()
-            axs[2].grid(True)
-
-            plt.xlim(left=0)
-            plt.ylim(top=180)
-
-            plt.suptitle('Angles over Time', y=0.92)
-
-            img_buffer = io.BytesIO()
-            plt.savefig(img_buffer, format='png')
-            img_buffer.seek(0)
-            plt.close()
-
-            return img_buffer
 
 

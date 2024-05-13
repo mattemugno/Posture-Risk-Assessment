@@ -1,10 +1,11 @@
 from mediapipe.python.solutions.pose import PoseLandmark
 
-ARM_ANGLE_THRESHOLD = 45
-ARM_ANGLE_RANGE = range(20, 60)
-HEAD_ANGLE_RANGE = range(25, 85)
-SHOULDERS_ANGLE_RANGE = range(20, 60)
-TRUNK_INCL_RANGE = range(20, 60)
+SHOULDERS_ANGLE_RANGE = range(21, 61)
+SHOULDERS_ANGLE_THRESHOLD = 60
+
+TRUNK_INCL_RANGE = range(21, 61)
+TRUNK_INCL_THRESHOLD = 61
+
 MAX_HOLDING_TIME = 4
 
 excluded_landmarks = [
