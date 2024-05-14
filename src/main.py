@@ -16,7 +16,7 @@ class PoseManager:
 
     def create_pose_detector(self):
         if self.pose is None:
-            self.pose = PoseDetector(model_complexity=1)
+            self.pose = PoseDetector(model_complexity=1, enable_segmentation=False)
 
     def destroy_pose_detector(self):
         if self.pose is not None:
@@ -74,19 +74,21 @@ def plot_pie_charts():
 def gen():
     while True:
         if pose_manager.pose is None:
-            continue
+            image_path = os.path.join(base_dir, 'img', 'video_player_placeholder.png')
+            with open(image_path, 'rb') as img_file:
+                frame = img_file.read()
 
-        frame = pose_manager.pose.find_landmarks()
-        if frame is not None:
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+        else:
+            frame = pose_manager.pose.find_landmarks()
+            if frame is not None:
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
 
 
 @app.route('/video_feed')
 def video_feed():
-    if pose_manager.pose is None:
-        return "Pose detector not initialized"
-
     return Response(gen(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 

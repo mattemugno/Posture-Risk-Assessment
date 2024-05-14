@@ -4,7 +4,7 @@ SHOULDERS_ANGLE_RANGE = range(21, 61)
 SHOULDERS_ANGLE_THRESHOLD = 60
 
 TRUNK_INCL_RANGE = range(21, 61)
-TRUNK_INCL_THRESHOLD = 61
+TRUNK_INCL_THRESHOLD = 60
 
 MAX_HOLDING_TIME = 4
 
@@ -28,5 +28,16 @@ landmark_to_coords = {
     PoseLandmark.RIGHT_ELBOW: 'right_elbow',
     PoseLandmark.RIGHT_SHOULDER: 'right_shoulder',
     PoseLandmark.RIGHT_HIP: 'right_hip',
-    PoseLandmark.LEFT_KNEE: 'left_knee'
+    PoseLandmark.LEFT_KNEE: 'left_knee',
+    PoseLandmark.RIGHT_KNEE: 'right_knee',
+}
+
+landmark_connections = {
+    PoseLandmark.LEFT_SHOULDER: [(12, 14), (12, 24)],
+    PoseLandmark.RIGHT_SHOULDER: [(11, 13), (11, 23)],
+    PoseLandmark.LEFT_HIP: [(11, 12), (12, 24), (11, 23), (23, 24)],
+    PoseLandmark.RIGHT_HIP: [(11, 12), (12, 24), (11, 23), (23, 24)],
+    PoseLandmark.LEFT_KNEE: [(11, 12), (12, 24), (11, 23), (23, 24)],
+    PoseLandmark.LEFT_ELBOW: [(12, 14), (12, 24)],
+    PoseLandmark.RIGHT_ELBOW: [(11, 13), (11, 23)]
 }

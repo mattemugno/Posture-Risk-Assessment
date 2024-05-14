@@ -1,15 +1,14 @@
-import io
 import json
 import logging
 import os
 import time
 
 import cv2
-import matplotlib.pyplot as plt
 import mediapipe as mp
 
 from src.VideoCamera import VideoCamera
-from src.config import excluded_landmarks, landmark_to_coords
+from src.config import excluded_landmarks, landmark_to_coords, SHOULDERS_ANGLE_THRESHOLD, \
+    TRUNK_INCL_THRESHOLD, SHOULDERS_ANGLE_RANGE, TRUNK_INCL_RANGE
 from src.utils import calculate_angle, visualize_angles, set_logger, show_angles_in_box
 
 set_logger()
@@ -48,6 +47,17 @@ class PoseDetector:
         self.custom_style = mp.solutions.drawing_styles.get_default_pose_landmarks_style()
         self.custom_connections = list(self.mp_holistic.POSE_CONNECTIONS)
 
+        self.good_spec = self.mp_drawing.DrawingSpec(color=(255, 0, 0), thickness=2,
+                                                     circle_radius=2)
+        self.bad_spec = self.mp_drawing.DrawingSpec(color=(0, 0, 255), thickness=2,
+                                                    circle_radius=2)
+        self.check_spec = self.mp_drawing.DrawingSpec(color=(0, 255, 255), thickness=2,
+                                                      circle_radius=2)
+
+        self.custom_connections_style = {}
+        for connection in self.custom_connections:
+            self.custom_connections_style[connection] = self.good_spec
+
         self.holistic = self.mp_holistic.Holistic(min_detection_confidence=self.min_detection_confidence,
                                                   min_tracking_confidence=self.min_tracking_confidence,
                                                   enable_segmentation=True,
@@ -72,8 +82,6 @@ class PoseDetector:
         :return: None
         """
 
-        self.set_custom_landmark()
-
         if self.cap.isOpen():
             image, results = self.cap.get_frame(self.holistic)
 
@@ -96,8 +104,8 @@ class PoseDetector:
                 for landmark in self.mp_holistic.PoseLandmark:
                     if landmark in landmark_to_coords:
                         if landmarks[landmark.value].visibility > self.min_detection_confidence:
-                            setattr(self, landmark_to_coords[landmark], [landmarks[landmark.value].x * self.cap.width,
-                                                                         landmarks[landmark.value].y * self.cap.height])
+                            setattr(self, landmark_to_coords[landmark], [landmarks[landmark.value].x,
+                                                                         landmarks[landmark.value].y])
                         else:
                             setattr(self, landmark_to_coords[landmark], None)
 
@@ -105,14 +113,15 @@ class PoseDetector:
                 l_shldr, r_shldr, trunk_incl = self.get_angles()
 
                 # Visualize angles
-                visualize_angles(image, l_shldr, self.left_shoulder)
-                visualize_angles(image, r_shldr, self.right_shoulder)
-                visualize_angles(image, trunk_incl, self.left_hip)
+                visualize_angles(image, l_shldr, self.left_shoulder, self.cap.width, self.cap.height)
+                visualize_angles(image, r_shldr, self.right_shoulder, self.cap.width, self.cap.height)
+                visualize_angles(image, trunk_incl, self.left_hip, self.cap.width, self.cap.height)
 
                 cv2.rectangle(image, (20, 20), (220, 90), (0, 0, 0), -1)
 
                 show_angles_in_box(image, l_shldr, r_shldr, trunk_incl)
 
+                self.set_custom_landmark(l_shldr, r_shldr, trunk_incl)
                 self.draw_landmarks(image, results)
 
                 current_time = time.time()
@@ -137,6 +146,13 @@ class PoseDetector:
                 pass
 
     def get_angles(self):
+        """
+        Calculate the angles for shoulder rotation and trunk inclination based on joint positions.
+
+        :return: Tuple containing the angles of the left shoulder, right shoulder, and trunk inclination.
+                 All angles are in degrees and rounded to two decimal places.
+        """
+
         # Get shoulders' angles
         l_shldr = calculate_angle(self.left_elbow, self.left_shoulder, self.left_hip)
         if l_shldr is not None:
@@ -154,31 +170,71 @@ class PoseDetector:
 
         return l_shldr, r_shldr, trunk_incl
 
-    def set_custom_landmark(self):
+    def set_custom_landmark(self, l_shldr, r_shldr, trunk_incl):
+        """
+        Set custom landmark drawing specifications based on pose landmarks and specific thresholds.
+
+        :param l_shldr: Left shoulder angle.
+        :param r_shldr: Right shoulder angle.
+        :param trunk_incl: Trunk inclination.
+        :return: None
+        """
+
+        left_shoulder_conn = (11, 13)
+        right_shoulder_conn = (12, 14)
+        trunk_conn = [(12, 24), (11, 23), (23, 24)]
+
         for landmark in self.mp_holistic.PoseLandmark:
             if landmark in excluded_landmarks:
                 self.custom_style[landmark] = self.mp_drawing.DrawingSpec(color=(255, 255, 0), thickness=None)
                 self.custom_connections = [connection_tuple for connection_tuple in self.custom_connections
                                            if landmark.value not in connection_tuple]
-            else:
-                self.custom_style[landmark] = self.mp_drawing.DrawingSpec(color=(255, 0, 0), thickness=2,
-                                                                          circle_radius=2)
+
+        if l_shldr is not None and l_shldr > SHOULDERS_ANGLE_THRESHOLD:
+            self.custom_connections_style[left_shoulder_conn] = self.bad_spec
+        elif l_shldr is not None and SHOULDERS_ANGLE_RANGE[0] <= l_shldr <= SHOULDERS_ANGLE_RANGE[-1]:
+            self.custom_connections_style[left_shoulder_conn] = self.check_spec
+        else:
+            self.custom_connections_style[left_shoulder_conn] = self.good_spec
+
+        if r_shldr is not None and r_shldr > SHOULDERS_ANGLE_THRESHOLD:
+            self.custom_connections_style[right_shoulder_conn] = self.bad_spec
+        elif r_shldr is not None and SHOULDERS_ANGLE_RANGE[0] <= r_shldr <= SHOULDERS_ANGLE_RANGE[-1]:
+            self.custom_connections_style[right_shoulder_conn] = self.check_spec
+        else:
+            self.custom_connections_style[right_shoulder_conn] = self.good_spec
+
+        if trunk_incl is not None and trunk_incl > TRUNK_INCL_THRESHOLD:
+            for connection in trunk_conn:
+                self.custom_connections_style[connection] = self.bad_spec
+        elif trunk_incl is not None and TRUNK_INCL_RANGE[0] <= trunk_incl <= TRUNK_INCL_RANGE[-1]:
+            for connection in trunk_conn:
+                self.custom_connections_style[connection] = self.check_spec
+        else:
+            for connection in trunk_conn:
+                self.custom_connections_style[connection] = self.good_spec
 
     def draw_landmarks(self, image, results):
-        # Render detections
+        """
+        Draw landmarks and connections on the given image based on the provided results.
+
+        :param image: The image on which landmarks will be drawn.
+        :param results: The results object containing pose and optionally face landmarks.
+        :return: None
+        """
 
         if self.enable_face_landmarks:
             self.mp_drawing.draw_landmarks(image, results.face_landmarks, self.mp_holistic.FACEMESH_CONTOURS,
                                            # landmark_drawing_spec=None,
                                            connection_drawing_spec=mp.solutions.drawing_styles
                                            .get_default_face_mesh_contours_style())
+
         self.mp_drawing.draw_landmarks(
             image,
             results.pose_landmarks,
             connections=self.custom_connections,
             landmark_drawing_spec=self.custom_style,
-            connection_drawing_spec=self.mp_drawing.DrawingSpec(color=(255, 0, 0), thickness=2,
-                                                                circle_radius=2)
+            connection_drawing_spec=self.custom_connections_style
         )
 
     def save_data(self, path_to_save=data_path):
@@ -191,5 +247,3 @@ class PoseDetector:
         with open(os.path.join(data_path, 'data.json'), 'w') as f:
             logging.info('Save data in %s', path_to_save)
             json.dump(self.data, f)
-
-

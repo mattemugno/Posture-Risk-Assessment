@@ -17,13 +17,12 @@ def set_logger():
     )
 
 
-def visualize_angles(image, angle, joint):
-    if angle is None:
-        pass
-    else:
+def visualize_angles(image, angle, joint, width, height):
+    print(joint)
+    if angle is not None:
         cv2.putText(image, str(angle),
-                    tuple(np.multiply(joint, [640, 480]).astype(int)),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA
+                    tuple(np.multiply(joint, [width, height]).astype(int)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2, cv2.LINE_AA
                     )
 
 
