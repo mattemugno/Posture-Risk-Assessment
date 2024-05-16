@@ -9,7 +9,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 
 from src.config import MAX_HOLDING_TIME, SHOULDERS_ANGLE_RANGE, TRUNK_INCL_RANGE, \
     TRUNK_INCL_THRESHOLD, SHOULDERS_ANGLE_THRESHOLD
-from src.utils import set_logger
+from src.utils import set_logger, calculate_posture_status
 
 set_logger()
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
@@ -126,11 +126,9 @@ class PostureEvaluation:
 
         plt.switch_backend('agg')
 
-        # Create a figure and axes
         fig, axs = plt.subplots(1, 3, figsize=(15, 3))
         plt.subplots_adjust(hspace=0.5, wspace=0.4)
 
-        # Plot all three pie charts in the same row
         for i in range(3):
             bad_percentage = self.not_acceptable_percentages[i]
             good_percentage = 100 - bad_percentage
@@ -159,7 +157,7 @@ class PostureEvaluation:
         """
         Plot posture angles from data.json
 
-        :return: fig (matplotlib.figure.Figure): The generated figure containing the plotted angles over time.
+        :return: fig (matplotlib.figure.Figure): The generated figure containing the plotted angles.
         """
 
         plt.switch_backend('agg')
@@ -169,20 +167,20 @@ class PostureEvaluation:
         axs[0].set_title('Right shoulder angle', fontsize=11)
         axs[0].grid(True)
         axs[0].set_ylabel('Angle (deg)')
+        axs[0].set_ylim(top=180)
 
         axs[1].plot(self.time, self.l_shldr, color='green')
         axs[1].set_title('Left shoulder angle', fontsize=11)
         axs[1].grid(True)
+        axs[1].get_yaxis().set_ticklabels([])
 
         axs[2].plot(self.time, self.trunk, color='red')
         axs[2].set_title('Trunk angle', fontsize=11)
         axs[2].grid(True)
+        axs[1].get_yaxis().set_ticklabels([])
 
         for ax in axs:
             ax.set_xlabel('Time (s)', fontsize=11)
-
-        plt.xlim(left=0)
-        plt.ylim(top=180)
 
         plt.close(fig)
 
@@ -195,18 +193,20 @@ class PostureEvaluation:
         :return: fig (matplotlib.figure.Figure): The generated figure containing the plotted posture status.
         """
 
-        y_right_arm = ['Acceptable' if v <= SHOULDERS_ANGLE_THRESHOLD else 'Not Acceptable' for v in
-                       self.r_shldr]
-        y_left_arm = ['Acceptable' if v <= SHOULDERS_ANGLE_THRESHOLD else 'Not Acceptable' for v in self.l_shldr]
-        y_trunk = ['Acceptable' if v <= TRUNK_INCL_THRESHOLD else 'Not Acceptable' for v in self.trunk]
-
         plt.switch_backend('agg')
         fig, axs = plt.subplots(1, 3, figsize=(15, 3), constrained_layout=True)
+
+        y_right_arm = calculate_posture_status(self.r_shldr, SHOULDERS_ANGLE_THRESHOLD, SHOULDERS_ANGLE_RANGE)
+        y_left_arm = calculate_posture_status(self.l_shldr, SHOULDERS_ANGLE_THRESHOLD, SHOULDERS_ANGLE_RANGE)
+        y_trunk = calculate_posture_status(self.trunk, TRUNK_INCL_THRESHOLD, TRUNK_INCL_RANGE)
+        y_labels = ['Acceptable', 'Checking', 'Not Acceptable']
 
         axs[0].plot(self.time, y_right_arm, color='blue')
         axs[0].set_title('Right Shoulder Posture Status', fontsize=11)
         axs[0].grid(True)
         axs[0].tick_params(axis='y', rotation=30)
+        axs[0].set_yticks([0, 1, 2])
+        axs[0].set_yticklabels(y_labels)
         axs[0].set_ylabel('Posture Status', fontsize=11)
 
         axs[1].plot(self.time, y_left_arm, color='green', label='Left Shoulder Posture Status')
@@ -221,7 +221,7 @@ class PostureEvaluation:
 
         for ax in axs:
             ax.set_xlabel('Time(s)', fontsize=11)
-            ax.set_ylim([-0.5, 1.5])
-        plt.close(fig)
+            ax.set_ylim([-0.5, 3])
 
+        plt.close(fig)
         return fig

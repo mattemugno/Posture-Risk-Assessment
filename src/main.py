@@ -93,7 +93,6 @@ def plot_posture_in_time():
 
 @app.route('/postureStatus')
 def plot_posture_status():
-    pose_manager.reset_posture_var()
     fig = pose_manager.posture.plot_posture_status()
     output = io.BytesIO()
     FigureCanvas(fig).print_png(output)
@@ -102,6 +101,7 @@ def plot_posture_status():
 
 @app.route('/piecharts')
 def plot_pie_charts():
+    pose_manager.reset_posture_var()
     pose_manager.posture.calculate_percentages()
     fig = pose_manager.posture.plot_pie_charts()
     output = io.BytesIO()

@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 from PIL import Image
 
-from src.config import RESIZE_PERCENT
+from src.config import RESIZE_PERCENT, MAX_HOLDING_TIME
 
 
 def set_logger():
@@ -87,3 +87,21 @@ def show_angles_in_box(image, l_shldr, r_shldr, trunk_incl):
     cv2.putText(image, "Trunk inclination: " + trunk_incl,
                 (30, 80),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
+
+
+def calculate_posture_status(values, threshold, range):
+    status = []
+    current_check_duration = 0
+    for v in values:
+        if v > threshold:
+            status.append(2)
+        elif range[0] <= v <= range[-1]:
+            if current_check_duration < MAX_HOLDING_TIME:
+                status.append(1)
+                current_check_duration += 1
+            else:
+                status.append(2)
+        else:
+            status.append(0)
+            current_check_duration = 0
+    return status
