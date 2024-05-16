@@ -139,15 +139,15 @@ class PostureEvaluation:
                                      autopct='%1.1f%%',
                                      radius=1.2)
 
-            texts[0].set_fontsize(11)
-            texts[1].set_fontsize(11)
+            texts[0].set_fontsize(12)
+            texts[1].set_fontsize(12)
 
             if i == 0:
-                axs[i].set_title(f'Left Shoulder Posture Risk', pad=15)
+                axs[i].set_title(f'Left Shoulder Posture Risk', pad=14, fontsize=14)
             elif i == 1:
-                axs[i].set_title(f'Right Shoulder Posture Risk', pad=15)
+                axs[i].set_title(f'Right Shoulder Posture Risk', pad=14, fontsize=14)
             else:
-                axs[i].set_title('Trunk posture Risk', pad=15)
+                axs[i].set_title('Trunk posture Risk', pad=15, fontsize=14)
 
         plt.close(fig)
 
@@ -164,23 +164,23 @@ class PostureEvaluation:
         fig, axs = plt.subplots(1, 3, sharex=True, figsize=(15, 3), constrained_layout=True)
 
         axs[0].plot(self.time, self.r_shldr, color='blue')
-        axs[0].set_title('Right shoulder angle', fontsize=11)
+        axs[0].set_title('Right shoulder angle', fontsize=13)
         axs[0].grid(True)
         axs[0].set_ylabel('Angle (deg)')
         axs[0].set_ylim(top=180)
 
         axs[1].plot(self.time, self.l_shldr, color='green')
-        axs[1].set_title('Left shoulder angle', fontsize=11)
+        axs[1].set_title('Left shoulder angle', fontsize=13)
         axs[1].grid(True)
         axs[1].get_yaxis().set_ticklabels([])
 
         axs[2].plot(self.time, self.trunk, color='red')
-        axs[2].set_title('Trunk angle', fontsize=11)
+        axs[2].set_title('Trunk angle', fontsize=13)
         axs[2].grid(True)
         axs[1].get_yaxis().set_ticklabels([])
 
         for ax in axs:
-            ax.set_xlabel('Time (s)', fontsize=11)
+            ax.set_xlabel('Time (s)', fontsize=13)
 
         plt.close(fig)
 
@@ -202,25 +202,23 @@ class PostureEvaluation:
         y_labels = ['Acceptable', 'Checking', 'Not Acceptable']
 
         axs[0].plot(self.time, y_right_arm, color='blue')
-        axs[0].set_title('Right Shoulder Posture Status', fontsize=11)
+        axs[0].set_title('Right Shoulder Posture Status', fontsize=13)
         axs[0].grid(True)
-        axs[0].tick_params(axis='y', rotation=30)
         axs[0].set_yticks([0, 1, 2])
         axs[0].set_yticklabels(y_labels)
-        axs[0].set_ylabel('Posture Status', fontsize=11)
 
         axs[1].plot(self.time, y_left_arm, color='green', label='Left Shoulder Posture Status')
-        axs[1].set_title('Left Shoulder Posture Status', fontsize=11)
+        axs[1].set_title('Left Shoulder Posture Status', fontsize=13)
         axs[1].grid(True)
         axs[1].get_yaxis().set_ticklabels([])
 
         axs[2].plot(self.time, y_trunk, color='red', label='Trunk Posture Status')
-        axs[2].set_title('Trunk Posture Status', fontsize=11)
+        axs[2].set_title('Trunk Posture Status', fontsize=13)
         axs[2].grid(True)
         axs[2].get_yaxis().set_ticklabels([])
 
         for ax in axs:
-            ax.set_xlabel('Time(s)', fontsize=11)
+            ax.set_xlabel('Time(s)', fontsize=13)
             ax.set_ylim([-0.5, 3])
 
         plt.close(fig)
