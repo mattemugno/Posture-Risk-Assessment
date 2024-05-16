@@ -1,17 +1,25 @@
+import io
 import os
+import threading
+
 from flask import Flask, Response, render_template, request
 from src.PoseDetector import PoseDetector
 from src.PostureEvaluation import PostureEvaluation
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 template_folder = os.path.join(base_dir, 'template')
+data_path = os.path.join(base_dir, 'data', 'data.json')
 
 app = Flask(__name__, template_folder=template_folder)
+
+route_lock = threading.Lock()
 
 
 class PoseManager:
     def __init__(self):
         self.pose = None
+        self.posture = None
         self.recording = False
 
     def create_pose_detector(self):
@@ -22,6 +30,21 @@ class PoseManager:
         if self.pose is not None:
             del self.pose
             self.pose = None
+
+    def create_posture_eval(self):
+        if self.posture is None:
+            self.posture = PostureEvaluation(data_path=data_path)
+
+    def destroy_posture_eval(self):
+        if self.posture is not None:
+            del self.posture
+            self.posture = None
+
+    def reset_posture_var(self):
+        if self.posture is not None:
+            self.posture.not_acceptable_shldr_r = 0
+            self.posture.not_acceptable_shldr_l = 0
+            self.posture.not_acceptable_count_trunk = 0
 
 
 pose_manager = PoseManager()
@@ -54,21 +77,36 @@ def tasks():
     return render_template('index.html')
 
 
+@app.route('/show_all_plots')
+def show_all_plots():
+    pose_manager.create_posture_eval()
+    return render_template('show_all_plots.html')
+
+
 @app.route('/plot')
 def plot_posture_in_time():
-    if pose_manager.pose is None:
-        return "Pose detector not initialized"
-    eval_posture = PostureEvaluation(os.path.join(pose_manager.pose.data_path, 'data.json'))
-    return Response(eval_posture.plot_posture(), mimetype='image/png')
+    fig = pose_manager.posture.plot_angles_over_time()
+    output = io.BytesIO()
+    FigureCanvas(fig).print_png(output)
+    return Response(output.getvalue(), mimetype='image/png')
+
+
+@app.route('/postureStatus')
+def plot_posture_status():
+    pose_manager.reset_posture_var()
+    fig = pose_manager.posture.plot_posture_status()
+    output = io.BytesIO()
+    FigureCanvas(fig).print_png(output)
+    return Response(output.getvalue(), mimetype='image/png')
 
 
 @app.route('/piecharts')
 def plot_pie_charts():
-    if pose_manager.pose is None:
-        return "Pose detector not initialized"
-    eval_posture = PostureEvaluation(os.path.join(pose_manager.pose.data_path, 'data.json'))
-    eval_posture.calculate_percentages()
-    return Response(eval_posture.plot_pie_charts(), mimetype='image/png')
+    pose_manager.posture.calculate_percentages()
+    fig = pose_manager.posture.plot_pie_charts()
+    output = io.BytesIO()
+    FigureCanvas(fig).print_png(output)
+    return Response(output.getvalue(), mimetype='image/png')
 
 
 def gen():

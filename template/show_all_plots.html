@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Meta Tags -->
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+
+    <!-- CSS Links -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- JavaScript Links -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <title>Show All Plots</title>
+
+    <!-- Custom CSS -->
+    <style>
+        .plot-container img {
+            width: 100%;
+            display: block;
+            border-radius: 10px;
+            padding: 35px;
+        }
+
+        h1.text-center {
+            margin-bottom: 20px;
+            margin-top: 20px;
+            font-size: 2em;
+            line-height: 1.2;
+            font-weight: 500;
+        }
+
+        h2.text-left {
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            line-height: 1.2;
+            font-weight: 500;
+        }
+
+        .row > div {
+            margin-bottom: 20px;
+        }
+
+        .col-md-12 {
+            padding-top: 20px;
+        }
+
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2 mt-5">
+            <h1 class="text-center">Posture Statistics</h1>
+            <div class="col-md-12 plot-container">
+                <h2 class="text-left">Body Joint angle over time</h2>
+                <img id="plot" src="{{ url_for('plot_posture_in_time') }}">
+            </div>
+            <div class="col-md-12 plot-container">
+                <h2 class="text-left">Posture Status over time</h2>
+                <img id="postureStatus" src="{{ url_for('plot_posture_status') }}">
+            </div>
+            <div class="col-md-12 plot-container">
+                <h2 class="text-left">Posture Risk percentage over time</h2>
+                <img id="piecharts" src="{{ url_for('plot_pie_charts') }}">
+            </div>
+            <div class="col-md-12 text-center">
+                <button class="btn btn-primary" id="back-button" onclick="window.history.back()">Back to homepage
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

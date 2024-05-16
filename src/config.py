@@ -8,6 +8,8 @@ TRUNK_INCL_THRESHOLD = 60
 
 MAX_HOLDING_TIME = 4
 
+RESIZE_PERCENT = 125
+
 excluded_landmarks = [
     PoseLandmark.LEFT_EYE,
     PoseLandmark.RIGHT_EYE,

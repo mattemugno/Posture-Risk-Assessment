@@ -25,15 +25,6 @@
             margin-right: 20px
         }
 
-        #plot,
-        #piecharts {
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin: auto;
-            border-radius: 10px;
-        }
-
         .container {
             max-width: 100%;
             padding: 0 10px; /* Aggiunge spazio ai lati del container */
@@ -48,19 +39,23 @@
         }
 
         h2.text-center {
+            margin-top: 20px;
             margin-bottom: 20px;
         }
 
         .button-group {
-            flex-basis: 20%; /* Imposta la larghezza dei bottoni */
-            max-width: 20%; /* Imposta larghezza massima per i bottoni */
-            padding-left: 10px; /* Aggiunge spazio a sinistra dei bottoni */
+            flex-basis: 20%;
+            max-width: 20%;
+            padding-left: 10px;
             padding-top: 10%;
         }
 
         .btn-custom {
             width: 100%;
-            margin-bottom: 10px; /* Aggiunge spazio tra i bottoni */
+            margin-bottom: 10px;
+            background-color: #007bff;
+            border-color: #007bff;
+            color: #fff;
         }
     </style>
 
@@ -87,68 +82,14 @@
                         <input class="btn-custom" name="save" type="submit" value="Save Data"/>
                     </form>
 
-                    <form action="{{ url_for('plot_posture_in_time') }}" id="plotForm" method="get">
-                        <input class="btn-custom" id="plotButton" name="plot" type="submit" value="Plot Posture"/>
+                    <form action="{{ url_for('show_all_plots') }}" method="get">
+                        <input class="btn-custom" type="submit" value="Show All Plots"/>
                     </form>
-
-                    <form action="{{ url_for('plot_pie_charts') }}" method="get">
-                        <input class="btn-custom" id="piechartsButton" name="piecharts" type="submit"
-                               value="Plot Pie Charts"/>
-                    </form>
-
-                    <!-- Placeholder for Plot and Piecharts (Initially Hidden) -->
-                    <div>
-                        <img id="plot" src="{{ url_for('plot_posture_in_time') }}"
-                             style="display: none; width: 100%; margin-top: 20px;">
-                        <img id="piecharts" src="{{ url_for('plot_pie_charts') }}"
-                             style="display: none; width: 100%; margin-top: 20px;">
-                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-<script>
-    $(document).ready(function () {
-        var plotVisible = false;
-        var piechartsVisible = false;
-
-        $("#plotButton").click(function (e) {
-            e.preventDefault();
-            if (plotVisible) {
-                $("#videoFeed").show();
-                $("#plot").hide();
-                plotVisible = false;
-            } else {
-                $("#videoFeed").hide();
-                $("#plot").show();
-                $("#piecharts").hide(); // Nasconde i piecharts quando si mostra il plot
-                plotVisible = true;
-                piechartsVisible = false;
-                // Posiziona il plot sotto il video
-                $("#plot").insertAfter("#videoFeed");
-            }
-        });
-
-        $("#piechartsButton").click(function (e) {
-            e.preventDefault();
-            if (piechartsVisible) {
-                $("#videoFeed").show();
-                $("#piecharts").hide();
-                piechartsVisible = false;
-            } else {
-                $("#videoFeed").hide();
-                $("#piecharts").show();
-                $("#plot").hide(); // Nasconde il plot quando si mostrano i piecharts
-                piechartsVisible = true;
-                plotVisible = false;
-                // Posiziona i piecharts sotto il video
-                $("#piecharts").insertAfter("#videoFeed");
-            }
-        });
-    });
-</script>
 
 </body>
 </html>

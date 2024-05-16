@@ -1,9 +1,13 @@
+import io
 import logging
 import math
 import sys
 
 import cv2
 import numpy as np
+from PIL import Image
+
+from src.config import RESIZE_PERCENT
 
 
 def set_logger():
@@ -18,7 +22,9 @@ def set_logger():
 
 
 def visualize_angles(image, angle, joint, width, height):
-    print(joint)
+    width = int(width * RESIZE_PERCENT / 100)
+    height = int(height * RESIZE_PERCENT / 100)
+
     if angle is not None:
         cv2.putText(image, str(angle),
                     tuple(np.multiply(joint, [width, height]).astype(int)),
