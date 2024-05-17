@@ -1,11 +1,10 @@
-import io
+import json
 import json
 import os
 
-import numpy as np
-import seaborn as sns
 from matplotlib import pyplot as plt
-from matplotlib.backends.backend_agg import FigureCanvasAgg
+from matplotlib.image import imread
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 
 from src.config import MAX_HOLDING_TIME, SHOULDERS_ANGLE_RANGE, TRUNK_INCL_RANGE, \
     TRUNK_INCL_THRESHOLD, SHOULDERS_ANGLE_THRESHOLD
@@ -48,6 +47,7 @@ class PostureEvaluation:
         self.not_acceptable_shldr_r = 0
         self.not_acceptable_shldr_l = 0
         self.not_acceptable_count_trunk = 0
+        plt.rcParams['axes.facecolor'] = '#f8f9fa'
 
     def calculate_percentages(self):
         """
@@ -116,18 +116,24 @@ class PostureEvaluation:
 
     def plot_pie_charts(self):
         """
-        Plot trunk and shoulders' posture pie charts.
+        Plot trunk and shoulders' posture pie charts with adjacent images.
 
-        :return: fig (matplotlib.figure.Figure): The generated figure containing the plotted pie charts.
+        :return: fig (matplotlib.figure.Figure): The generated figure containing the plotted pie charts and images.
         """
 
         labels = ['Acceptable', 'Not acceptable']
-        colors = sns.color_palette('bright')
+        colors = ['green', 'red']
 
         plt.switch_backend('agg')
 
-        fig, axs = plt.subplots(1, 3, figsize=(15, 3))
+        fig, axs = plt.subplots(1, 6, figsize=(20, 4))  # Create space for 3 pie charts and 3 images
         plt.subplots_adjust(hspace=0.5, wspace=0.4)
+
+        img_paths = [
+            os.path.join(base_dir, 'img', 'left_shoulder.png'),
+            os.path.join(base_dir, 'img', 'right_shoulder.png'),
+            os.path.join(base_dir, 'img', 'trunk.png')
+        ]
 
         for i in range(3):
             bad_percentage = self.not_acceptable_percentages[i]
@@ -135,20 +141,35 @@ class PostureEvaluation:
             data = [good_percentage, bad_percentage]
             explode = (0, 0.1)
 
-            _, texts, _ = axs[i].pie(data, explode=explode, shadow=True, labels=labels, colors=colors,
-                                     autopct='%1.1f%%',
-                                     radius=1.2)
+            wedges, _, autotexts = axs[2 * i].pie(data, explode=explode, shadow=True, colors=colors,
+                                                  autopct='%1.1f%%', radius=1.2)
 
-            texts[0].set_fontsize(12)
-            texts[1].set_fontsize(12)
+            for autotext in autotexts:
+                autotext.set_fontsize(12)
+                autotext.set_color('white')
+                autotext.set_weight('bold')
 
             if i == 0:
-                axs[i].set_title(f'Left Shoulder Posture Risk', pad=14, fontsize=14)
+                axs[2 * i].set_title('Left Shoulder Posture Risk', pad=18, fontsize=16)
             elif i == 1:
-                axs[i].set_title(f'Right Shoulder Posture Risk', pad=14, fontsize=14)
+                axs[2 * i].set_title('Right Shoulder Posture Risk', pad=18, fontsize=16)
             else:
-                axs[i].set_title('Trunk posture Risk', pad=15, fontsize=14)
+                axs[2 * i].set_title('Trunk Posture Risk', pad=15, fontsize=16)
 
+            # Add image next to pie chart
+            img = imread(img_paths[i])
+            imagebox = OffsetImage(img, zoom=0.35)
+            ab = AnnotationBbox(imagebox, (0.4, 0.5), frameon=False, xycoords='axes fraction',
+                                boxcoords="axes fraction")
+            axs[2 * i + 1].add_artist(ab)
+            axs[2 * i + 1].axis('off')  # Hide axes for images
+
+        fig.patch.set_facecolor('#f8f9fa')
+
+        fig.legend(wedges, labels, loc='upper right', bbox_to_anchor=(0.95, 0.95), frameon=False,
+                   fontsize=14)
+
+        fig.tight_layout(rect=[0, 0, 0.9, 1])
         plt.close(fig)
 
         return fig
@@ -161,27 +182,27 @@ class PostureEvaluation:
         """
 
         plt.switch_backend('agg')
-        fig, axs = plt.subplots(1, 3, sharex=True, figsize=(15, 3), constrained_layout=True)
+        fig, axs = plt.subplots(3, 1, figsize=(8, 9))
 
         axs[0].plot(self.time, self.r_shldr, color='blue')
         axs[0].set_title('Right shoulder angle', fontsize=13)
         axs[0].grid(True)
-        axs[0].set_ylabel('Angle (deg)')
         axs[0].set_ylim(top=180)
 
         axs[1].plot(self.time, self.l_shldr, color='green')
         axs[1].set_title('Left shoulder angle', fontsize=13)
+        axs[1].set_ylabel('Angle (deg)')
+        axs[1].set_ylim(top=180)
         axs[1].grid(True)
-        axs[1].get_yaxis().set_ticklabels([])
 
         axs[2].plot(self.time, self.trunk, color='red')
         axs[2].set_title('Trunk angle', fontsize=13)
         axs[2].grid(True)
-        axs[1].get_yaxis().set_ticklabels([])
+        axs[2].set_ylim(top=180)
+        axs[2].set_xlabel('Time (s)', fontsize=13)
 
-        for ax in axs:
-            ax.set_xlabel('Time (s)', fontsize=13)
-
+        fig.patch.set_facecolor('#f8f9fa')
+        fig.tight_layout()
         plt.close(fig)
 
         return fig
@@ -194,7 +215,7 @@ class PostureEvaluation:
         """
 
         plt.switch_backend('agg')
-        fig, axs = plt.subplots(1, 3, figsize=(15, 3), constrained_layout=True)
+        fig, axs = plt.subplots(3, 1, figsize=(8, 9))
 
         y_right_arm = calculate_posture_status(self.r_shldr, SHOULDERS_ANGLE_THRESHOLD, SHOULDERS_ANGLE_RANGE)
         y_left_arm = calculate_posture_status(self.l_shldr, SHOULDERS_ANGLE_THRESHOLD, SHOULDERS_ANGLE_RANGE)
@@ -210,16 +231,17 @@ class PostureEvaluation:
         axs[1].plot(self.time, y_left_arm, color='green', label='Left Shoulder Posture Status')
         axs[1].set_title('Left Shoulder Posture Status', fontsize=13)
         axs[1].grid(True)
-        axs[1].get_yaxis().set_ticklabels([])
+        axs[1].set_yticks([0, 1, 2])
+        axs[1].set_yticklabels(y_labels)
 
         axs[2].plot(self.time, y_trunk, color='red', label='Trunk Posture Status')
         axs[2].set_title('Trunk Posture Status', fontsize=13)
         axs[2].grid(True)
-        axs[2].get_yaxis().set_ticklabels([])
+        axs[2].set_xlabel('Time(s)', fontsize=13)
+        axs[2].set_yticks([0, 1, 2])
+        axs[2].set_yticklabels(y_labels)
 
-        for ax in axs:
-            ax.set_xlabel('Time(s)', fontsize=13)
-            ax.set_ylim([-0.5, 3])
-
+        fig.patch.set_facecolor('#f8f9fa')
+        fig.tight_layout()
         plt.close(fig)
         return fig

@@ -24,7 +24,7 @@ class PoseManager:
 
     def create_pose_detector(self):
         if self.pose is None:
-            self.pose = PoseDetector(model_complexity=1, enable_segmentation=False)
+            self.pose = PoseDetector(model_complexity=2, enable_segmentation=False)
 
     def destroy_pose_detector(self):
         if self.pose is not None:
