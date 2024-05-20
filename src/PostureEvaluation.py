@@ -1,5 +1,4 @@
 import json
-import json
 import os
 
 from matplotlib import pyplot as plt
@@ -47,7 +46,7 @@ class PostureEvaluation:
         self.not_acceptable_shldr_r = 0
         self.not_acceptable_shldr_l = 0
         self.not_acceptable_count_trunk = 0
-        plt.rcParams['axes.facecolor'] = '#f8f9fa'
+        plt.rcParams['axes.facecolor'] = '#ffffff'
 
     def calculate_percentages(self):
         """
@@ -130,9 +129,9 @@ class PostureEvaluation:
         plt.subplots_adjust(hspace=0.5, wspace=0.4)
 
         img_paths = [
-            os.path.join(base_dir, 'img', 'left_shoulder.png'),
-            os.path.join(base_dir, 'img', 'right_shoulder.png'),
-            os.path.join(base_dir, 'img', 'trunk.png')
+            os.path.join(base_dir, 'img', 'left_shoulder.jpg'),
+            os.path.join(base_dir, 'img', 'right_shoulder.jpg'),
+            os.path.join(base_dir, 'img', 'trunk.jpg')
         ]
 
         for i in range(3):
@@ -158,13 +157,13 @@ class PostureEvaluation:
 
             # Add image next to pie chart
             img = imread(img_paths[i])
-            imagebox = OffsetImage(img, zoom=0.35)
+            imagebox = OffsetImage(img, zoom=0.75)
             ab = AnnotationBbox(imagebox, (0.4, 0.5), frameon=False, xycoords='axes fraction',
                                 boxcoords="axes fraction")
             axs[2 * i + 1].add_artist(ab)
             axs[2 * i + 1].axis('off')  # Hide axes for images
 
-        fig.patch.set_facecolor('#f8f9fa')
+        fig.patch.set_facecolor('#ffffff')
 
         fig.legend(wedges, labels, loc='upper right', bbox_to_anchor=(0.95, 0.95), frameon=False,
                    fontsize=14)
@@ -189,19 +188,23 @@ class PostureEvaluation:
         axs[0].grid(True)
         axs[0].set_ylim(top=180)
 
-        axs[1].plot(self.time, self.l_shldr, color='green')
+        axs[1].plot(self.time, self.l_shldr, color='orange')
         axs[1].set_title('Left shoulder angle', fontsize=13)
         axs[1].set_ylabel('Angle (deg)')
         axs[1].set_ylim(top=180)
         axs[1].grid(True)
 
-        axs[2].plot(self.time, self.trunk, color='red')
+        axs[2].plot(self.time, self.trunk, color='purple')
         axs[2].set_title('Trunk angle', fontsize=13)
         axs[2].grid(True)
         axs[2].set_ylim(top=180)
         axs[2].set_xlabel('Time (s)', fontsize=13)
 
-        fig.patch.set_facecolor('#f8f9fa')
+        for ax in axs:
+            ax.axhline(y=SHOULDERS_ANGLE_RANGE[0], color='green', linestyle='--')
+            ax.axhline(y=SHOULDERS_ANGLE_RANGE[-1], color='red', linestyle='--')
+
+        fig.patch.set_facecolor('#ffffff')
         fig.tight_layout()
         plt.close(fig)
 
@@ -228,20 +231,21 @@ class PostureEvaluation:
         axs[0].set_yticks([0, 1, 2])
         axs[0].set_yticklabels(y_labels)
 
-        axs[1].plot(self.time, y_left_arm, color='green', label='Left Shoulder Posture Status')
+        axs[1].plot(self.time, y_left_arm, color='orange', label='Left Shoulder Posture Status')
         axs[1].set_title('Left Shoulder Posture Status', fontsize=13)
+        axs[1].set_ylabel('Posture Status')
         axs[1].grid(True)
         axs[1].set_yticks([0, 1, 2])
         axs[1].set_yticklabels(y_labels)
 
-        axs[2].plot(self.time, y_trunk, color='red', label='Trunk Posture Status')
+        axs[2].plot(self.time, y_trunk, color='purple', label='Trunk Posture Status')
         axs[2].set_title('Trunk Posture Status', fontsize=13)
         axs[2].grid(True)
         axs[2].set_xlabel('Time(s)', fontsize=13)
         axs[2].set_yticks([0, 1, 2])
         axs[2].set_yticklabels(y_labels)
 
-        fig.patch.set_facecolor('#f8f9fa')
+        fig.patch.set_facecolor('#ffffff')
         fig.tight_layout()
         plt.close(fig)
         return fig
