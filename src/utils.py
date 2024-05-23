@@ -1,11 +1,16 @@
 import logging
 import math
+import os
 import sys
 
 import cv2
 import numpy as np
+from matplotlib import pyplot as plt
+from matplotlib.patches import Rectangle
 
 from src.config import RESIZE_PERCENT, MAX_HOLDING_TIME
+
+base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 
 
 def set_logger():
@@ -24,8 +29,12 @@ def visualize_angles(image, angle, joint, width, height):
     height = int(height * RESIZE_PERCENT / 100)
 
     if angle is not None:
+        offset_x = 10
+        offset_y = -10
+        text_position = np.multiply(joint, [width, height]).astype(int) + np.array([offset_x, offset_y])
+
         cv2.putText(image, str(angle),
-                    tuple(np.multiply(joint, [width, height]).astype(int)),
+                    tuple(text_position),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2, cv2.LINE_AA
                     )
 
@@ -103,3 +112,41 @@ def calculate_posture_status(values, threshold, range):
             status.append(0)
             current_check_duration = 0
     return status
+
+
+def get_image_zoomed(ax):
+    fig_new = plt.figure(figsize=(8, 4))
+    ax_new = fig_new.add_axes([0.1, 0.1, 0.8, 0.8])
+
+    for line in ax.get_lines():
+        ax_new.plot(line.get_xdata(), line.get_ydata(), color=line.get_color())
+
+    ax_new.set_title(ax.get_title(), fontsize=13)
+    ax_new.set_xlim(ax.get_xlim())
+    ax_new.set_ylim(ax.get_ylim())
+
+    zoom_outside(ax_new, xlim=(20, 40), ylim=(0, 25), new_fig=fig_new, pos=[1., 0.75, 0.3, 0.3], color="red")
+    zoom_outside(ax_new, xlim=(180, 230), ylim=(25, 110), new_fig=fig_new, pos=[1., 0.35, 0.3, 0.3], color="red")
+    zoom_outside(ax_new, xlim=(380, 420), ylim=(25, 50), new_fig=fig_new, pos=[1., -0.05, 0.3, 0.3], color="red")
+
+    fig_new.savefig(os.path.join(base_dir, 'img', 'zoomed_plot_trunk.png'), bbox_inches='tight')
+
+
+def zoom_outside(ax, xlim, ylim, new_fig, pos, color="red", linewidth=2, roiKwargs={}):
+    roiKwargs = dict([("fill", False), ("linestyle", "dashed"),
+                      ("color", color), ("linewidth", linewidth)]
+                     + list(roiKwargs.items()))
+
+    roi = [xlim[0], ylim[0], xlim[1], ylim[1]]
+    ax_new = new_fig.add_axes(pos)
+    ax_new.set_xlim(xlim)
+    ax_new.set_ylim(ylim)
+
+    rect = Rectangle([roi[0], roi[1]], roi[2] - roi[0], roi[3] - roi[1], **roiKwargs)
+    ax.add_patch(rect)
+
+    for line in ax.get_lines():
+        ax_new.plot(line.get_xdata(), line.get_ydata(), color=line.get_color())
+
+    ax_new.set_facecolor('#ffffff')
+

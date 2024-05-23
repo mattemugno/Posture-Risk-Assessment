@@ -140,7 +140,8 @@
                 <!-- Buttons and Plots (occupies 1/4 of the width) -->
                 <div class="col-lg-3 button-group">
                     <form action="{{ url_for('tasks') }}" method="post">
-                        <input class="btn-custom" name="stop" type="submit" value="Stop/Start"/>
+                        <input class="btn-custom" name="stop" type="submit" value="Open/Close Video Camera"/>
+                        <input class="btn-custom" name="session" type="submit" value="Start/Stop Recording"/>
                         <input class="btn-custom" name="segmask" type="submit" value="Segmentation Mask"/>
                         <input class="btn-custom" name="save" type="submit" value="Save Data"/>
                     </form>

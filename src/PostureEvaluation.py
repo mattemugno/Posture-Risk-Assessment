@@ -1,6 +1,9 @@
 import json
 import os
 
+import pandas as pd
+import seaborn as sns
+
 from matplotlib import pyplot as plt
 from matplotlib.image import imread
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
@@ -125,7 +128,7 @@ class PostureEvaluation:
 
         plt.switch_backend('agg')
 
-        fig, axs = plt.subplots(1, 6, figsize=(20, 4))  # Create space for 3 pie charts and 3 images
+        fig, axs = plt.subplots(1, 6, figsize=(20, 4))
         plt.subplots_adjust(hspace=0.5, wspace=0.4)
 
         img_paths = [
@@ -158,7 +161,7 @@ class PostureEvaluation:
             # Add image next to pie chart
             img = imread(img_paths[i])
             imagebox = OffsetImage(img, zoom=0.75)
-            ab = AnnotationBbox(imagebox, (0.4, 0.5), frameon=False, xycoords='axes fraction',
+            ab = AnnotationBbox(imagebox, (0.5, 0.5), frameon=False, xycoords='axes fraction',
                                 boxcoords="axes fraction")
             axs[2 * i + 1].add_artist(ab)
             axs[2 * i + 1].axis('off')  # Hide axes for images
@@ -208,7 +211,7 @@ class PostureEvaluation:
         fig.tight_layout()
         plt.close(fig)
 
-        return fig
+        return fig, axs
 
     def plot_posture_status(self):
         """
@@ -249,3 +252,28 @@ class PostureEvaluation:
         fig.tight_layout()
         plt.close(fig)
         return fig
+
+    def plot_heatmap(self):
+        data = {
+            'Time': pd.to_datetime(self.time, unit='s').strftime('%H:%M:%S'),
+            'Left Shoulder Angle': self.l_shldr,
+            'Right Shoulder Angle': self.r_shldr,
+            'Trunk Inclination Angle': self.trunk
+        }
+        df = pd.DataFrame(data)
+
+        fig, ax = plt.subplots(figsize=(20, 4))
+        sns.heatmap(df.set_index('Time').T, cmap='coolwarm', cbar=True, ax=ax)
+
+        ax.set_xlabel('Time (h:m:s)')
+        ax.set_title('Posture Heatmap Over Time')
+
+        ax.set_yticklabels(ax.get_yticklabels(), rotation=0, horizontalalignment='right')
+        fig.tight_layout()
+        fig.subplots_adjust(left=0.12, right=1)
+
+        fig.patch.set_facecolor('#ffffff')
+        plt.close(fig)
+        return fig
+
+

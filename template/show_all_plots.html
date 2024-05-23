@@ -141,6 +141,12 @@
             </div>
             <div class="row">
                 <div class="col-12 plot-container">
+                    <h2 class="text-left">Posture Heatmap</h2>
+                    <img alt="Heatmap of posture over time" id="plot_heatmap" src="{{ url_for('plot_heatmap') }}">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12 plot-container">
                     <h2 class="text-left">Posture Risk Percentage</h2>
                     <img alt="Pie charts showing posture risk percentage" id="piecharts"
                          src="{{ url_for('plot_pie_charts') }}">

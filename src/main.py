@@ -1,11 +1,14 @@
 import io
+import logging
 import os
 import threading
 
 from flask import Flask, Response, render_template, request
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+
 from src.PoseDetector import PoseDetector
 from src.PostureEvaluation import PostureEvaluation
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from src.utils import get_image_zoomed
 
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 template_folder = os.path.join(base_dir, 'template')
@@ -63,13 +66,20 @@ def tasks():
                 pose_manager.pose.enable_segmentation = False
             else:
                 pose_manager.pose.enable_segmentation = True
-        elif request.form.get('stop') == 'Stop/Start':
+        elif request.form.get('stop') == 'Open/Close Video Camera':
             if pose_manager.recording:
                 pose_manager.destroy_pose_detector()
                 pose_manager.recording = False
             else:
                 pose_manager.create_pose_detector()
                 pose_manager.recording = True
+        elif request.form.get('stop') == 'Start/Stop Recording':
+            if pose_manager.pose.record_session:
+                pose_manager.pose.record_session = False
+                logging.info('Stop Recording')
+            else:
+                pose_manager.pose.record_session = True
+                logging.info('Start Recording')
         elif request.form.get('save') == 'Save Data':
             pose_manager.pose.save_data()
     elif request.method == 'GET':
@@ -85,7 +95,14 @@ def show_all_plots():
 
 @app.route('/plot')
 def plot_posture_in_time():
-    fig = pose_manager.posture.plot_angles_over_time()
+    fig, axs = pose_manager.posture.plot_angles_over_time()
+
+    '''ax = axs[0]
+    get_image_zoomed(ax)
+
+    ax = axs[2]
+    get_image_zoomed(ax)'''
+
     output = io.BytesIO()
     FigureCanvas(fig).print_png(output)
     return Response(output.getvalue(), mimetype='image/png')
@@ -104,6 +121,14 @@ def plot_pie_charts():
     pose_manager.reset_posture_var()
     pose_manager.posture.calculate_percentages()
     fig = pose_manager.posture.plot_pie_charts()
+    output = io.BytesIO()
+    FigureCanvas(fig).print_png(output)
+    return Response(output.getvalue(), mimetype='image/png')
+
+
+@app.route('/plot_heatmap')
+def plot_heatmap():
+    fig = pose_manager.posture.plot_heatmap()
     output = io.BytesIO()
     FigureCanvas(fig).print_png(output)
     return Response(output.getvalue(), mimetype='image/png')

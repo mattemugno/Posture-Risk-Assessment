@@ -71,6 +71,8 @@ class PoseDetector:
         self.start_time = time.time()
         self.last_time_updated = self.start_time
 
+        self.record_session = False
+
         logging.info('PoseDetector instance created.')
 
     def find_landmarks(self):
@@ -87,7 +89,8 @@ class PoseDetector:
 
             if results.pose_landmarks is None:
                 logging.info("Ignoring empty camera frame.")
-                return None
+                _, png = cv2.imencode('.png', image)
+                return png.tobytes()
 
             try:
 
@@ -127,7 +130,7 @@ class PoseDetector:
                 current_time = time.time()
                 if current_time - self.last_time_updated >= self.sampling_rate:
                     self.data.append({
-                        'timestamp': current_time - self.start_time,
+                        'timestamp': current_time,
                         'l_shldr': l_shldr,
                         'r_shldr': r_shldr,
                         'trunk_incl': trunk_incl
