@@ -8,11 +8,10 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
 from src.PoseDetector import PoseDetector
 from src.PostureEvaluation import PostureEvaluation
-from src.utils import get_image_zoomed
 
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 template_folder = os.path.join(base_dir, 'template')
-data_path = os.path.join(base_dir, 'data', 'data.json')
+data_path = os.path.join(base_dir, 'data', '../data/data_old.json')
 
 app = Flask(__name__, template_folder=template_folder)
 
@@ -61,27 +60,29 @@ def index():
 @app.route('/requests', methods=['POST', 'GET'])
 def tasks():
     if request.method == 'POST':
+        request.form.get('stop')
         if request.form.get('segmask') == 'Segmentation Mask':
             if pose_manager.pose.enable_segmentation:
                 pose_manager.pose.enable_segmentation = False
             else:
                 pose_manager.pose.enable_segmentation = True
-        elif request.form.get('stop') == 'Open/Close Video Camera':
+        elif request.form.get('stop') == 'Open Video Camera' or request.form.get('stop') == 'Close Video Camera':
             if pose_manager.recording:
+                logging.info('Stop video camera')
                 pose_manager.destroy_pose_detector()
                 pose_manager.recording = False
             else:
+                logging.info('Open video camera')
                 pose_manager.create_pose_detector()
                 pose_manager.recording = True
-        elif request.form.get('stop') == 'Start/Stop Recording':
+        elif request.form.get('session') == 'Start Session' or request.form.get('session') == 'Stop Session':
             if pose_manager.pose.record_session:
                 pose_manager.pose.record_session = False
-                logging.info('Stop Recording')
+                pose_manager.pose.save_data()
+                logging.info('Stop Session')
             else:
                 pose_manager.pose.record_session = True
-                logging.info('Start Recording')
-        elif request.form.get('save') == 'Save Data':
-            pose_manager.pose.save_data()
+                logging.info('Start Session')
     elif request.method == 'GET':
         return render_template('index.html')
     return render_template('index.html')

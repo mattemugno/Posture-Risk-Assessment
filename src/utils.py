@@ -56,6 +56,35 @@ def calculate_angle(a, b, c):
     return angle
 
 
+def calculate_angle_vertical(point1, point2):
+    delta_x = point2[0] - point1[0]
+    delta_y = point2[1] - point1[1]
+    angle = np.arctan2(delta_x, delta_y) * 180.0 / np.pi
+    return abs(angle)
+
+
+def calculate_angle_3d(point1, point2, point3):
+    if point1 is None or point2 is None or point3 is None:
+        return None
+
+    vector1 = np.array([point1[0] - point2[0], point1[1] - point2[1], point1[2] - point2[2]])
+    vector2 = np.array([point3[0] - point2[0], point3[1] - point2[1], point3[2] - point2[2]])
+    cosine_angle = np.dot(vector1, vector2) / (np.linalg.norm(vector1) * np.linalg.norm(vector2))
+    angle = np.arccos(cosine_angle) * 180.0 / np.pi
+    return angle
+
+
+def calculate_angle_vertical_3d(point1, point2):
+    if point1 is None or point2 is None:
+        return None
+
+    vector = np.array([point1[0] - point2[0], point1[1] - point2[1], point1[2] - point2[2]])
+    vertical_vector = np.array([0, -1, 0])
+    cosine_angle = np.dot(vector, vertical_vector) / np.linalg.norm(vector)
+    angle = np.arccos(cosine_angle) * 180.0 / np.pi
+    return angle
+
+
 def findDistance(x1, y1, x2, y2):
     dist = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
     return dist
@@ -149,4 +178,3 @@ def zoom_outside(ax, xlim, ylim, new_fig, pos, color="red", linewidth=2, roiKwar
         ax_new.plot(line.get_xdata(), line.get_ydata(), color=line.get_color())
 
     ax_new.set_facecolor('#ffffff')
-

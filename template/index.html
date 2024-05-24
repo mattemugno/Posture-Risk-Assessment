@@ -32,20 +32,22 @@
         }
 
         /* Video styles */
-        #videoFeed {
-            width: 100%;
-            height: auto;
-            border-radius: 10px;
-            padding-bottom: 15px;
-            margin-right: 20px;
-        }
-
         /* Video container styles */
         .video-container {
             display: flex;
             flex-wrap: wrap;
             justify-content: flex-start; /* Align items to the start (left) */
             align-items: center; /* Center items vertically */
+        }
+
+        /* Video styles */
+        #videoFeed {
+            width: 90%; /* Riduce la larghezza del video feed al 90% */
+            height: auto;
+            border-radius: 10px;
+            padding-bottom: 15px;
+            margin-right: 20px;
+            margin-left: 20px;
         }
 
         /* Heading styles */
@@ -98,13 +100,13 @@
 
         @media (min-width: 768px) {
             .col-lg-9 {
-                flex: 0 0 75%; /* 3/4 width for video feed */
-                max-width: 75%;
+                flex: 0 0 70%; /* Reduced to 70% width */
+                max-width: 70%; /* Reduced to 70% width */
             }
 
             .button-group {
-                flex: 0 0 25%; /* 1/4 width for buttons */
-                max-width: 25%;
+                flex: 0 0 30%; /* Increased to 30% width */
+                max-width: 30%; /* Increased to 30% width */
                 margin-top: auto;
                 margin-bottom: auto; /* Center vertically */
             }
@@ -139,11 +141,12 @@
 
                 <!-- Buttons and Plots (occupies 1/4 of the width) -->
                 <div class="col-lg-3 button-group">
-                    <form action="{{ url_for('tasks') }}" method="post">
-                        <input class="btn-custom" name="stop" type="submit" value="Open/Close Video Camera"/>
-                        <input class="btn-custom" name="session" type="submit" value="Start/Stop Recording"/>
+                    <form action="{{ url_for('tasks') }}" id="tasksForm" method="post">
+                        <input class="btn-custom" id="cameraButton" name="stop" type="submit"
+                               value="Open Video Camera"/>
+                        <input class="btn-custom" id="sessionButton" name="session" type="submit"
+                               value="Start Session"/>
                         <input class="btn-custom" name="segmask" type="submit" value="Segmentation Mask"/>
-                        <input class="btn-custom" name="save" type="submit" value="Save Data"/>
                     </form>
 
                     <form action="{{ url_for('show_all_plots') }}" method="get">
@@ -154,6 +157,46 @@
         </div>
     </div>
 </div>
+
+<!-- JavaScript to change button text -->
+<script>
+    $(document).ready(function () {
+        var cameraButton = $('#cameraButton');
+        var sessionButton = $('#sessionButton');
+
+        var cameraState = localStorage.getItem('cameraState') || "Open Video Camera";
+        var sessionState = localStorage.getItem('sessionState') || "Start Session";
+
+        cameraButton.val(cameraState);
+        sessionButton.val(sessionState);
+
+        cameraButton.click(function () {
+            if (cameraState === 'Open Video Camera') {
+                cameraState = 'Close Video Camera';
+            } else {
+                cameraState = 'Open Video Camera';
+            }
+            cameraButton.val(cameraState);
+
+            localStorage.setItem('cameraState', cameraState);
+
+            $('#tasksForm').submit();
+        });
+
+        sessionButton.click(function () {
+            if (sessionState === 'Start Session') {
+                sessionState = 'Stop Session';
+            } else {
+                sessionState = 'Start Session';
+            }
+            sessionButton.val(sessionState);
+
+            localStorage.setItem('sessionState', sessionState);
+
+            $('#tasksForm').submit();
+        });
+    });
+</script>
 
 </body>
 </html>

@@ -178,7 +178,7 @@ class PostureEvaluation:
 
     def plot_angles_over_time(self):
         """
-        Plot posture angles from data.json
+        Plot posture angles from data_old.json
 
         :return: fig (matplotlib.figure.Figure): The generated figure containing the plotted angles.
         """
@@ -254,6 +254,12 @@ class PostureEvaluation:
         return fig
 
     def plot_heatmap(self):
+        """
+        Plots a heatmap representing posture data over time.
+
+        :return: fig (matplotlib.figure.Figure): The matplotlib Figure object containing the heatmap plot.
+        """
+
         data = {
             'Time': pd.to_datetime(self.time, unit='s').strftime('%H:%M:%S'),
             'Left Shoulder Angle': self.l_shldr,
@@ -267,6 +273,12 @@ class PostureEvaluation:
 
         ax.set_xlabel('Time (h:m:s)')
         ax.set_title('Posture Heatmap Over Time')
+
+        x_labels = ax.get_xticklabels()
+        for i, label in enumerate(x_labels):
+            if i % 30 != 0:
+                label.set_visible(False)
+        ax.set_xticklabels(x_labels)
 
         ax.set_yticklabels(ax.get_yticklabels(), rotation=0, horizontalalignment='right')
         fig.tight_layout()

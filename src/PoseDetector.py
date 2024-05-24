@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 import logging
 import os
@@ -9,7 +10,7 @@ import mediapipe as mp
 from src.VideoCamera import VideoCamera
 from src.config import excluded_landmarks, landmark_to_coords, SHOULDERS_ANGLE_THRESHOLD, \
     TRUNK_INCL_THRESHOLD, SHOULDERS_ANGLE_RANGE, TRUNK_INCL_RANGE
-from src.utils import calculate_angle, visualize_angles, set_logger, show_angles_in_box
+from src.utils import visualize_angles, set_logger, show_angles_in_box, calculate_angle_vertical, calculate_angle
 
 set_logger()
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
@@ -67,7 +68,7 @@ class PoseDetector:
         self.data_path = data_path
         self.sampling_rate = sampling_rate
 
-        self.cap = VideoCamera(0)
+        self.cap = VideoCamera(1)
         self.start_time = time.time()
         self.last_time_updated = self.start_time
 
@@ -128,15 +129,16 @@ class PoseDetector:
                 self.draw_landmarks(image, results)
 
                 current_time = time.time()
-                if current_time - self.last_time_updated >= self.sampling_rate:
-                    self.data.append({
-                        'timestamp': current_time,
-                        'l_shldr': l_shldr,
-                        'r_shldr': r_shldr,
-                        'trunk_incl': trunk_incl
-                    })
+                if self.record_session:
+                    if current_time - self.last_time_updated >= self.sampling_rate:
+                        self.data.append({
+                            'timestamp': current_time,
+                            'l_shldr': l_shldr,
+                            'r_shldr': r_shldr,
+                            'trunk_incl': trunk_incl
+                        })
 
-                    self.last_time_updated = current_time
+                        self.last_time_updated = current_time
 
                 if self.enable_segmentation:
                     _, png = cv2.imencode('.png', 255 * seg_mask)
@@ -151,12 +153,13 @@ class PoseDetector:
     def get_angles(self):
         """
         Calculate the angles for shoulder rotation and trunk inclination based on joint positions.
+        This method also handles the case where the person is seated.
 
         :return: Tuple containing the angles of the left shoulder, right shoulder, and trunk inclination.
                  All angles are in degrees and rounded to two decimal places.
         """
 
-        # Get shoulders' angles
+        # Calculate shoulder angles
         l_shldr = calculate_angle(self.left_elbow, self.left_shoulder, self.left_hip)
         if l_shldr is not None:
             l_shldr = round(l_shldr, 2)
@@ -165,10 +168,22 @@ class PoseDetector:
         if r_shldr is not None:
             r_shldr = round(r_shldr, 2)
 
-        # Get trunk inclination
-        trunk_incl = calculate_angle(self.left_shoulder, self.left_hip, self.left_knee)
+        # Calculate trunk inclination angle
+        trunk_incl = None
+        if self.left_shoulder and self.left_hip and self.left_knee:
+            # Check if the person is standing by comparing the x coordinates
+            if abs(self.left_shoulder[0] - self.left_hip[0]) < 0.05 and abs(
+                    self.left_hip[0] - self.left_knee[0]) < 0.05:
+                # The person is likely standing
+                trunk_incl = calculate_angle(self.left_shoulder, self.left_hip, self.left_knee)
+                if trunk_incl is not None:
+                    trunk_incl = 180 - trunk_incl
+            else:
+                # The person is likely sitting
+                # Calculate the angle between the vertical and the line from the hip to the shoulder
+                trunk_incl = calculate_angle_vertical(self.left_shoulder, self.left_hip)
+
         if trunk_incl is not None:
-            trunk_incl = 180 - trunk_incl
             trunk_incl = round(trunk_incl, 2)
 
         return l_shldr, r_shldr, trunk_incl
@@ -247,6 +262,10 @@ class PoseDetector:
         :param path_to_save: The path where the data should be saved.
         :return: None
         """
-        with open(os.path.join(data_path, 'data.json'), 'w') as f:
+
+        current_time = datetime.now().strftime('%d-%m-%H-%M-%S')
+        filename = f'{current_time}.json'
+
+        with open(os.path.join(data_path, filename), 'w') as f:
             logging.info('Save data in %s', path_to_save)
             json.dump(self.data, f)
