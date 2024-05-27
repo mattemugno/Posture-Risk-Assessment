@@ -186,18 +186,18 @@ class PostureEvaluation:
         plt.switch_backend('agg')
         fig, axs = plt.subplots(3, 1, figsize=(8, 9))
 
-        axs[0].plot(self.time, self.r_shldr, color='blue')
+        axs[0].plot(self.time, self.r_shldr, color='#38618C')
         axs[0].set_title('Right shoulder angle', fontsize=13)
         axs[0].grid(True)
         axs[0].set_ylim(top=180)
 
-        axs[1].plot(self.time, self.l_shldr, color='orange')
+        axs[1].plot(self.time, self.l_shldr, color='#7E1946')
         axs[1].set_title('Left shoulder angle', fontsize=13)
         axs[1].set_ylabel('Angle (deg)')
         axs[1].set_ylim(top=180)
         axs[1].grid(True)
 
-        axs[2].plot(self.time, self.trunk, color='purple')
+        axs[2].plot(self.time, self.trunk, color='#6abe40')
         axs[2].set_title('Trunk angle', fontsize=13)
         axs[2].grid(True)
         axs[2].set_ylim(top=180)
@@ -228,20 +228,20 @@ class PostureEvaluation:
         y_trunk = calculate_posture_status(self.trunk, TRUNK_INCL_THRESHOLD, TRUNK_INCL_RANGE)
         y_labels = ['Acceptable', 'Checking', 'Not Acceptable']
 
-        axs[0].plot(self.time, y_right_arm, color='blue')
+        axs[0].plot(self.time, y_right_arm, color='#38618C')
         axs[0].set_title('Right Shoulder Posture Status', fontsize=13)
         axs[0].grid(True)
         axs[0].set_yticks([0, 1, 2])
         axs[0].set_yticklabels(y_labels)
 
-        axs[1].plot(self.time, y_left_arm, color='orange', label='Left Shoulder Posture Status')
+        axs[1].plot(self.time, y_left_arm, color='#7E1946', label='Left Shoulder Posture Status')
         axs[1].set_title('Left Shoulder Posture Status', fontsize=13)
         axs[1].set_ylabel('Posture Status')
         axs[1].grid(True)
         axs[1].set_yticks([0, 1, 2])
         axs[1].set_yticklabels(y_labels)
 
-        axs[2].plot(self.time, y_trunk, color='purple', label='Trunk Posture Status')
+        axs[2].plot(self.time, y_trunk, color='#6abe40', label='Trunk Posture Status')
         axs[2].set_title('Trunk Posture Status', fontsize=13)
         axs[2].grid(True)
         axs[2].set_xlabel('Time(s)', fontsize=13)
@@ -275,9 +275,9 @@ class PostureEvaluation:
         ax.set_title('Posture Heatmap Over Time')
 
         x_labels = ax.get_xticklabels()
-        for i, label in enumerate(x_labels):
+        '''for i, label in enumerate(x_labels):
             if i % 30 != 0:
-                label.set_visible(False)
+                label.set_visible(False)'''
         ax.set_xticklabels(x_labels)
 
         ax.set_yticklabels(ax.get_yticklabels(), rotation=0, horizontalalignment='right')

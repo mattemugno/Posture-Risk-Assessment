@@ -8,6 +8,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
 from src.PoseDetector import PoseDetector
 from src.PostureEvaluation import PostureEvaluation
+from src.utils import get_image_zoomed
 
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 template_folder = os.path.join(base_dir, 'template')
@@ -98,10 +99,12 @@ def show_all_plots():
 def plot_posture_in_time():
     fig, axs = pose_manager.posture.plot_angles_over_time()
 
+    # plot shoulder
     '''ax = axs[0]
-    get_image_zoomed(ax)
+    get_image_zoomed(ax)'''
 
-    ax = axs[2]
+    # plot trunk
+    '''ax = axs[2]
     get_image_zoomed(ax)'''
 
     output = io.BytesIO()
