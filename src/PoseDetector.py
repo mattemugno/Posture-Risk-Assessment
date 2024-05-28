@@ -9,13 +9,10 @@ import mediapipe as mp
 
 from src.VideoCamera import VideoCamera
 from src.config import excluded_landmarks, landmark_to_coords, SHOULDERS_ANGLE_THRESHOLD, \
-    TRUNK_INCL_THRESHOLD, SHOULDERS_ANGLE_RANGE, TRUNK_INCL_RANGE
+    TRUNK_INCL_THRESHOLD, SHOULDERS_ANGLE_RANGE, TRUNK_INCL_RANGE, data_path, DEVICE_ID
 from src.utils import visualize_angles, set_logger, show_angles_in_box, calculate_angle_vertical, calculate_angle
 
 set_logger()
-base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-data_path = os.path.join(base_dir, 'data')
-model_path = os.path.join(base_dir, 'src', 'pose_landmarker.task')
 
 
 class PoseDetector:
@@ -68,7 +65,7 @@ class PoseDetector:
         self.data_path = data_path
         self.sampling_rate = sampling_rate
 
-        self.cap = VideoCamera(1)
+        self.cap = VideoCamera(DEVICE_ID)
         self.start_time = time.time()
         self.last_time_updated = self.start_time
 

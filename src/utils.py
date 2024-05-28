@@ -8,9 +8,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.patches import Rectangle
 
-from src.config import RESIZE_PERCENT, MAX_HOLDING_TIME
-
-base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+from src.config import RESIZE_PERCENT, MAX_HOLDING_TIME, base_dir
 
 
 def set_logger():
@@ -155,17 +153,17 @@ def get_image_zoomed(ax):
     ax_new.set_ylim(ax.get_ylim())
 
     # trunk
-    '''zoom_outside(ax_new, xlim=(20, 40), ylim=(0, 25), new_fig=fig_new, pos=[1., 0.75, 0.3, 0.3], color="blue")
-    zoom_outside(ax_new, xlim=(180, 230), ylim=(25, 110), new_fig=fig_new, pos=[1., 0.35, 0.3, 0.3], color="red")
-    zoom_outside(ax_new, xlim=(380, 420), ylim=(25, 50), new_fig=fig_new, pos=[1., -0.05, 0.3, 0.3], color="yellow")'''
+    zoom_outside(ax_new, xlim=(20, 40), ylim=(0, 25), new_fig=fig_new, pos=[1., 0.75, 0.3, 0.3], color="blue")
+    zoom_outside(ax_new, xlim=(180, 230), ylim=(10, 110), new_fig=fig_new, pos=[1., 0.35, 0.3, 0.3], color="red")
+    zoom_outside(ax_new, xlim=(380, 420), ylim=(25, 50), new_fig=fig_new, pos=[1., -0.05, 0.3, 0.3], color="#D5D000")
 
     # shoulder
-    zoom_outside(ax_new, xlim=(20, 40), ylim=(0, 25), new_fig=fig_new, pos=[1., 0.75, 0.3, 0.3], color="blue")
-    zoom_outside(ax_new, xlim=(285, 320), ylim=(5, 70), new_fig=fig_new, pos=[1., 0.35, 0.3, 0.3], color="yellow")
-    zoom_outside(ax_new, xlim=(412, 448), ylim=(100, 140), new_fig=fig_new, pos=[1., -0.05, 0.3, 0.3], color="red")
+    '''zoom_outside(ax_new, xlim=(20, 40), ylim=(0, 25), new_fig=fig_new, pos=[1., 0.75, 0.3, 0.3], color="blue")
+    zoom_outside(ax_new, xlim=(285, 320), ylim=(5, 70), new_fig=fig_new, pos=[1., 0.35, 0.3, 0.3], color="#D5D000")
+    zoom_outside(ax_new, xlim=(412, 448), ylim=(100, 140), new_fig=fig_new, pos=[1., -0.05, 0.3, 0.3], color="red")'''
 
-    # fig_new.savefig(os.path.join(base_dir, 'img', 'zoomed_plot_trunk.png'), bbox_inches='tight')
-    fig_new.savefig(os.path.join(base_dir, 'img', 'zoomed_plot_shoulder.png'), bbox_inches='tight')
+    fig_new.savefig(os.path.join(base_dir, 'img', 'zoomed_plot_trunk.png'), bbox_inches='tight')
+    # fig_new.savefig(os.path.join(base_dir, 'img', 'zoomed_plot_shoulder.png'), bbox_inches='tight')
 
 
 def zoom_outside(ax, xlim, ylim, new_fig, pos, color="red", linewidth=2, roiKwargs={}):

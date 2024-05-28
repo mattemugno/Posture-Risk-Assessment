@@ -1,54 +1,14 @@
 import io
 import logging
 import os
-import threading
 
 from flask import Flask, Response, render_template, request
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
-from src.PoseDetector import PoseDetector
-from src.PostureEvaluation import PostureEvaluation
-from src.utils import get_image_zoomed
-
-base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-template_folder = os.path.join(base_dir, 'template')
-data_path = os.path.join(base_dir, 'data', '../data/data_old.json')
+from src.PoseManager import PoseManager
+from src.config import template_folder, base_dir
 
 app = Flask(__name__, template_folder=template_folder)
-
-route_lock = threading.Lock()
-
-
-class PoseManager:
-    def __init__(self):
-        self.pose = None
-        self.posture = None
-        self.recording = False
-
-    def create_pose_detector(self):
-        if self.pose is None:
-            self.pose = PoseDetector(model_complexity=0)
-
-    def destroy_pose_detector(self):
-        if self.pose is not None:
-            del self.pose
-            self.pose = None
-
-    def create_posture_eval(self):
-        if self.posture is None:
-            self.posture = PostureEvaluation(data_path=data_path)
-
-    def destroy_posture_eval(self):
-        if self.posture is not None:
-            del self.posture
-            self.posture = None
-
-    def reset_posture_var(self):
-        if self.posture is not None:
-            self.posture.not_acceptable_shldr_r = 0
-            self.posture.not_acceptable_shldr_l = 0
-            self.posture.not_acceptable_count_trunk = 0
-
 
 pose_manager = PoseManager()
 

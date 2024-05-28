@@ -9,11 +9,10 @@ from matplotlib.image import imread
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 
 from src.config import MAX_HOLDING_TIME, SHOULDERS_ANGLE_RANGE, TRUNK_INCL_RANGE, \
-    TRUNK_INCL_THRESHOLD, SHOULDERS_ANGLE_THRESHOLD
+    TRUNK_INCL_THRESHOLD, SHOULDERS_ANGLE_THRESHOLD, base_dir
 from src.utils import set_logger, calculate_posture_status
 
 set_logger()
-base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 
 
 ### Trunk inclination -- alfa angle

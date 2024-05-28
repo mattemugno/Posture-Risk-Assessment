@@ -1,4 +1,14 @@
+import os
+
 from mediapipe.python.solutions.pose import PoseLandmark
+
+base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+template_folder = os.path.join(base_dir, 'template')
+data_path = os.path.join(base_dir, 'data', '../data/data_old.json')
+model_path = os.path.join(base_dir, 'src', 'pose_landmarker.task')
+
+MODEL_COMPLEXITY = 2
+DEVICE_ID = 0
 
 SHOULDERS_ANGLE_RANGE = range(21, 61)
 SHOULDERS_ANGLE_THRESHOLD = 60
