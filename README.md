@@ -7,22 +7,17 @@ This repository contains code and resources for assessing the risk associated wi
 - [Features](#features)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Datasets](#datasets)
 - [Models](#models)
-- [Contributing](#contributing)
-- [License](#license)
-- [Acknowledgements](#acknowledgements)
 
 ## Introduction
 
-Workplace ergonomics is crucial for preventing musculoskeletal disorders. This project leverages computer vision and machine learning to automatically assess the risk level of different postures, helping to identify and mitigate potential health risks.
+Workplace ergonomics is crucial for preventing musculoskeletal disorders. This project leverages computer vision to automatically assess the risk level of different postures, helping to identify and mitigate potential health risks.
 
 ## Features
 
-- **Posture Detection**: Detects human postures from images or video frames.
-- **Risk Classification**: Classifies postures into different risk levels (e.g., low, medium, high).
-- **Visualization**: Provides visual feedback on detected postures and risk levels.
-- **Configurable Models**: Supports different machine learning models for detection and classification.
+- **Posture Detection**: Detects human postures from live streaming video.
+- **Body joint angles estimation**: Estimation of shoulder and trunk angles.
+- **Visualization**: Provides visual feedback on detected postures and risk levels over time.
 
 ## Installation
 
@@ -37,3 +32,6 @@ Workplace ergonomics is crucial for preventing musculoskeletal disorders. This p
 3. Install the required packages:
    ```sh
    pip install -r requirements.txt
+
+## Models
+The repository uses MediaPipe for detecting human body landmarks. 
