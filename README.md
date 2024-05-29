@@ -6,7 +6,6 @@ This repository contains code and resources for assessing the risk associated wi
 - [Introduction](#introduction)
 - [Features](#features)
 - [Installation](#installation)
-- [Usage](#usage)
 - [Models](#models)
 
 ## Introduction
