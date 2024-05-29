@@ -76,10 +76,10 @@ class PoseDetector:
     def find_landmarks(self):
         """
         Turns on the camera and finds the landmarks on the human body using the MediaPipe holistic model.
-        It also calculates the angles of the arms and legs and visualizes them on the image. The data is then added
-        to a list.
+        It also calculates the angles of the arms and trunk inclination and visualizes them on the image.
+        The data is then added to a list.
 
-        :return: None
+        :return: Encoded image bytes.
         """
 
         if self.cap.isOpen():
@@ -256,7 +256,7 @@ class PoseDetector:
         """
         Write data collected from the pose detection to a JSON file.
 
-        :param path_to_save: The path where the data should be saved.
+        :param path_to_save: The path where the data should be saved. Default is the configured data path.
         :return: None
         """
 

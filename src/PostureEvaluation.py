@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 
 import pandas as pd
@@ -28,7 +29,9 @@ class PostureEvaluation:
         Initializes the PostureEvaluation instance
         :arg data_path: Path of the json file
         """
-        self.data_path = data_path
+        self.data_path = os.path.join(data_path, '28-05-20-09-21.json')
+
+        plt.set_loglevel('WARNING')
 
         with open(self.data_path, 'r') as file:
             data = json.load(file)
@@ -185,26 +188,30 @@ class PostureEvaluation:
         plt.switch_backend('agg')
         fig, axs = plt.subplots(3, 1, figsize=(8, 9))
 
-        axs[0].plot(self.time, self.r_shldr, color='#38618C')
+        time_labels = pd.to_datetime(self.time, unit='s').strftime('%H:%M:%S')
+
+        axs[0].plot(time_labels, self.r_shldr, color='#38618C')
         axs[0].set_title('Right shoulder angle', fontsize=13)
         axs[0].grid(True)
         axs[0].set_ylim(top=180)
 
-        axs[1].plot(self.time, self.l_shldr, color='#7E1946')
+        axs[1].plot(time_labels, self.l_shldr, color='#7E1946')
         axs[1].set_title('Left shoulder angle', fontsize=13)
         axs[1].set_ylabel('Angle (deg)')
         axs[1].set_ylim(top=180)
         axs[1].grid(True)
 
-        axs[2].plot(self.time, self.trunk, color='#6abe40')
+        axs[2].plot(time_labels, self.trunk, color='#6abe40')
         axs[2].set_title('Trunk angle', fontsize=13)
         axs[2].grid(True)
         axs[2].set_ylim(top=180)
-        axs[2].set_xlabel('Time (s)', fontsize=13)
+        axs[2].set_xlabel('Time (H:M:S)', fontsize=13)
 
         for ax in axs:
             ax.axhline(y=SHOULDERS_ANGLE_RANGE[0], color='green', linestyle='--')
             ax.axhline(y=SHOULDERS_ANGLE_RANGE[-1], color='red', linestyle='--')
+            ax.set_xticks(time_labels[::20])
+            ax.set_xticklabels(time_labels[::20], rotation=90, ha='right')
 
         fig.patch.set_facecolor('#ffffff')
         fig.tight_layout()
@@ -221,31 +228,37 @@ class PostureEvaluation:
 
         plt.switch_backend('agg')
         fig, axs = plt.subplots(3, 1, figsize=(8, 9))
+        time_labels = pd.to_datetime(self.time, unit='s').strftime('%H:%M:%S')
+        interval = 5
 
         y_right_arm = calculate_posture_status(self.r_shldr, SHOULDERS_ANGLE_THRESHOLD, SHOULDERS_ANGLE_RANGE)
         y_left_arm = calculate_posture_status(self.l_shldr, SHOULDERS_ANGLE_THRESHOLD, SHOULDERS_ANGLE_RANGE)
         y_trunk = calculate_posture_status(self.trunk, TRUNK_INCL_THRESHOLD, TRUNK_INCL_RANGE)
         y_labels = ['Acceptable', 'Checking', 'Not Acceptable']
 
-        axs[0].plot(self.time, y_right_arm, color='#38618C')
+        axs[0].plot(time_labels, y_right_arm, color='#38618C')
         axs[0].set_title('Right Shoulder Posture Status', fontsize=13)
         axs[0].grid(True)
         axs[0].set_yticks([0, 1, 2])
         axs[0].set_yticklabels(y_labels)
 
-        axs[1].plot(self.time, y_left_arm, color='#7E1946', label='Left Shoulder Posture Status')
+        axs[1].plot(time_labels, y_left_arm, color='#7E1946', label='Left Shoulder Posture Status')
         axs[1].set_title('Left Shoulder Posture Status', fontsize=13)
         axs[1].set_ylabel('Posture Status')
         axs[1].grid(True)
         axs[1].set_yticks([0, 1, 2])
         axs[1].set_yticklabels(y_labels)
 
-        axs[2].plot(self.time, y_trunk, color='#6abe40', label='Trunk Posture Status')
+        axs[2].plot(time_labels, y_trunk, color='#6abe40', label='Trunk Posture Status')
         axs[2].set_title('Trunk Posture Status', fontsize=13)
         axs[2].grid(True)
         axs[2].set_xlabel('Time(s)', fontsize=13)
         axs[2].set_yticks([0, 1, 2])
         axs[2].set_yticklabels(y_labels)
+
+        for ax in axs:
+            ax.set_xticks(time_labels[::20])
+            ax.set_xticklabels(time_labels[::20], rotation=90, ha='right')
 
         fig.patch.set_facecolor('#ffffff')
         fig.tight_layout()
@@ -272,12 +285,6 @@ class PostureEvaluation:
 
         ax.set_xlabel('Time (h:m:s)')
         ax.set_title('Posture Heatmap Over Time')
-
-        x_labels = ax.get_xticklabels()
-        '''for i, label in enumerate(x_labels):
-            if i % 30 != 0:
-                label.set_visible(False)'''
-        ax.set_xticklabels(x_labels)
 
         ax.set_yticklabels(ax.get_yticklabels(), rotation=0, horizontalalignment='right')
         fig.tight_layout()

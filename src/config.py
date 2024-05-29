@@ -4,7 +4,7 @@ from mediapipe.python.solutions.pose import PoseLandmark
 
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 template_folder = os.path.join(base_dir, 'template')
-data_path = os.path.join(base_dir, 'data', '../data/data_old.json')
+data_path = os.path.join(base_dir, 'data')
 model_path = os.path.join(base_dir, 'src', 'pose_landmarker.task')
 
 MODEL_COMPLEXITY = 2
@@ -19,6 +19,7 @@ TRUNK_INCL_THRESHOLD = 60
 MAX_HOLDING_TIME = 20
 
 RESIZE_PERCENT = 110
+
 
 excluded_landmarks = [
     PoseLandmark.LEFT_EYE,
