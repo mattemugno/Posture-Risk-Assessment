@@ -6,7 +6,7 @@ from flask import Flask, Response, render_template, request
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
 from src.PoseManager import PoseManager
-from src.config import template_folder, base_dir
+from src.config import template_folder, base_dir, data_path
 
 app = Flask(__name__, template_folder=template_folder)
 
@@ -29,11 +29,9 @@ def tasks():
                 pose_manager.pose.enable_segmentation = True
         elif request.form.get('stop') == 'Open Video Camera' or request.form.get('stop') == 'Close Video Camera':
             if pose_manager.recording:
-                logging.info('Stop video camera')
                 pose_manager.destroy_pose_detector()
                 pose_manager.recording = False
             else:
-                logging.info('Open video camera')
                 pose_manager.create_pose_detector()
                 pose_manager.recording = True
         elif request.form.get('session') == 'Start Session' or request.form.get('session') == 'Stop Session':
@@ -49,10 +47,20 @@ def tasks():
     return render_template('index.html')
 
 
-@app.route('/show_all_plots')
+@app.route('/show_all_plots', methods=['GET', 'POST'])
 def show_all_plots():
-    pose_manager.create_posture_eval()
+    if pose_manager.posture:
+        pose_manager.destroy_posture_eval()
+    filename = request.form.get('json_file')
+    if filename:
+        pose_manager.create_posture_eval(filename)
     return render_template('show_all_plots.html')
+
+
+@app.route('/get_json_files', methods=['GET'])
+def get_json_files():
+    json_files = [f for f in os.listdir(data_path) if f.endswith('.json')]
+    return {'json_files': json_files}
 
 
 @app.route('/plot')

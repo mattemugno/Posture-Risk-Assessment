@@ -7,11 +7,14 @@ template_folder = os.path.join(base_dir, 'template')
 data_path = os.path.join(base_dir, 'data')
 model_path = os.path.join(base_dir, 'src', 'pose_landmarker.task')
 
-MODEL_COMPLEXITY = 2
+MODEL_COMPLEXITY = 0
 DEVICE_ID = 0
 
 SHOULDERS_ANGLE_RANGE = range(21, 61)
 SHOULDERS_ANGLE_THRESHOLD = 60
+
+ELBOW_ANGLE_RANGE = range(90, 151)
+ELBOW_ANGLE_THRESHOLD = 150
 
 TRUNK_INCL_RANGE = range(21, 61)
 TRUNK_INCL_THRESHOLD = 60
@@ -43,6 +46,8 @@ landmark_to_coords = {
     PoseLandmark.RIGHT_HIP: 'right_hip',
     PoseLandmark.LEFT_KNEE: 'left_knee',
     PoseLandmark.RIGHT_KNEE: 'right_knee',
+    PoseLandmark.RIGHT_WRIST: 'right_wrist',
+    PoseLandmark.LEFT_WRIST: 'left_wrist',
 }
 
 landmark_connections = {

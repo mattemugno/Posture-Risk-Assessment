@@ -18,9 +18,9 @@ class PoseManager:
             del self.pose
             self.pose = None
 
-    def create_posture_eval(self):
+    def create_posture_eval(self, filename):
         if self.posture is None:
-            self.posture = PostureEvaluation(data_path=data_path)
+            self.posture = PostureEvaluation(filename=filename)
 
     def destroy_posture_eval(self):
         if self.posture is not None:

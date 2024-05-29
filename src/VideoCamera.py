@@ -1,3 +1,5 @@
+import logging
+
 import cv2
 
 from src.config import RESIZE_PERCENT
@@ -28,6 +30,7 @@ class VideoCamera(object):
         :return: None
         """
 
+        logging.info('Release Cam')
         self.video.release()
 
     def get_frame(self, holistic):

@@ -10,7 +10,7 @@ from matplotlib.image import imread
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 
 from src.config import MAX_HOLDING_TIME, SHOULDERS_ANGLE_RANGE, TRUNK_INCL_RANGE, \
-    TRUNK_INCL_THRESHOLD, SHOULDERS_ANGLE_THRESHOLD, base_dir
+    TRUNK_INCL_THRESHOLD, SHOULDERS_ANGLE_THRESHOLD, base_dir, data_path
 from src.utils import set_logger, calculate_posture_status
 
 set_logger()
@@ -24,15 +24,17 @@ class PostureEvaluation:
     This class is used to assess posture angles and show the risks associated with different parts of the body.
     """
 
-    def __init__(self, data_path):
+    def __init__(self, filename):
         """
         Initializes the PostureEvaluation instance
         :arg data_path: Path of the json file
         """
-        self.data_path = os.path.join(data_path, '28-05-20-09-21.json')
+
+        self.data_path = os.path.join(data_path, filename)
 
         plt.set_loglevel('WARNING')
 
+        print(self.data_path)
         with open(self.data_path, 'r') as file:
             data = json.load(file)
             data = [v for v in data if
