@@ -9,8 +9,7 @@ import mediapipe as mp
 
 from src.VideoCamera import VideoCamera
 from src.config import excluded_landmarks, landmark_to_coords, SHOULDERS_ANGLE_THRESHOLD, \
-    TRUNK_INCL_THRESHOLD, SHOULDERS_ANGLE_RANGE, TRUNK_INCL_RANGE, data_path, DEVICE_ID, ELBOW_ANGLE_RANGE, \
-    ELBOW_ANGLE_THRESHOLD
+    TRUNK_INCL_THRESHOLD, SHOULDERS_ANGLE_RANGE, TRUNK_INCL_RANGE, data_path, DEVICE_ID
 from src.utils import visualize_angles, set_logger, show_angles_in_box, calculate_angle_vertical, calculate_angle
 
 set_logger()
@@ -112,20 +111,19 @@ class PoseDetector:
                             setattr(self, landmark_to_coords[landmark], None)
 
                 # Get joint angles
-                l_elbow, r_elbow, l_shldr, r_shldr, trunk_incl = self.get_angles()
+                l_shldr, r_shldr, trunk_incl = self.get_angles()
 
                 # Visualize angles
-                visualize_angles(image, l_elbow, self.left_elbow, self.cap.width, self.cap.height)
-                visualize_angles(image, r_elbow, self.right_elbow, self.cap.width, self.cap.height)
                 visualize_angles(image, l_shldr, self.left_shoulder, self.cap.width, self.cap.height)
                 visualize_angles(image, r_shldr, self.right_shoulder, self.cap.width, self.cap.height)
                 visualize_angles(image, trunk_incl, self.left_hip, self.cap.width, self.cap.height)
 
-                cv2.rectangle(image, (20, 20), (220, 130), (0, 0, 0), -1)
+                cv2.rectangle(image, (20, 20), (220, 90), (0, 0, 0), -1)
+                # cv2.rectangle(image, (20, 20), (220, 130), (0, 0, 0), -1)
 
-                show_angles_in_box(image, l_elbow, r_elbow, l_shldr, r_shldr, trunk_incl)
+                show_angles_in_box(image, l_shldr, r_shldr, trunk_incl)
 
-                self.set_custom_landmark(l_elbow, r_elbow, l_shldr, r_shldr, trunk_incl)
+                self.set_custom_landmark(l_shldr, r_shldr, trunk_incl)
                 self.draw_landmarks(image, results)
 
                 current_time = time.time()
@@ -133,8 +131,6 @@ class PoseDetector:
                     if current_time - self.last_time_updated >= self.sampling_rate:
                         self.data.append({
                             'timestamp': current_time,
-                            'l_elbow': l_elbow,
-                            'r_elbow': r_elbow,
                             'l_shldr': l_shldr,
                             'r_shldr': r_shldr,
                             'trunk_incl': trunk_incl
@@ -160,16 +156,6 @@ class PoseDetector:
         :return: Tuple containing the angles of the left shoulder, right shoulder, and trunk inclination.
                  All angles are in degrees and rounded to two decimal places.
         """
-
-        # Calculate left elbow angle
-        l_elbow = calculate_angle(self.left_wrist, self.left_elbow, self.left_shoulder)
-        if l_elbow is not None:
-            l_elbow = round(l_elbow, 2)
-
-        # Calculate left elbow angle
-        r_elbow = calculate_angle(self.right_wrist, self.right_elbow, self.right_shoulder)
-        if r_elbow is not None:
-           r_elbow = round(r_elbow, 2)
 
         # Calculate left shoulder angle
         l_shldr = calculate_angle(self.left_elbow, self.left_shoulder, self.left_hip)
@@ -199,9 +185,9 @@ class PoseDetector:
         if trunk_incl is not None:
             trunk_incl = round(trunk_incl, 2)
 
-        return l_elbow, r_elbow, l_shldr, r_shldr, trunk_incl
+        return l_shldr, r_shldr, trunk_incl
 
-    def set_custom_landmark(self, l_elbow, r_elbow, l_shldr, r_shldr, trunk_incl):
+    def set_custom_landmark(self, l_shldr, r_shldr, trunk_incl):
         """
         Set custom landmark drawing specifications based on pose landmarks and specific thresholds.
 
@@ -211,8 +197,6 @@ class PoseDetector:
         :return: None
         """
 
-        left_elbow_conn = (13, 15)
-        right_elbow_conn = (14, 16)
         left_shoulder_conn = (11, 13)
         right_shoulder_conn = (12, 14)
         trunk_conn = [(12, 24), (11, 23), (23, 24)]
@@ -222,20 +206,6 @@ class PoseDetector:
                 self.custom_style[landmark] = self.mp_drawing.DrawingSpec(color=(255, 255, 0), thickness=None)
                 self.custom_connections = [connection_tuple for connection_tuple in self.custom_connections
                                            if landmark.value not in connection_tuple]
-
-        if l_elbow is not None and l_elbow > ELBOW_ANGLE_THRESHOLD:
-            self.custom_connections_style[left_elbow_conn] = self.bad_spec
-        elif l_elbow is not None and ELBOW_ANGLE_RANGE[0] <= l_elbow <= ELBOW_ANGLE_RANGE[-1]:
-            self.custom_connections_style[left_elbow_conn] = self.check_spec
-        else:
-            self.custom_connections_style[left_elbow_conn] = self.good_spec
-
-        if r_elbow is not None and r_elbow > ELBOW_ANGLE_THRESHOLD:
-            self.custom_connections_style[right_elbow_conn] = self.bad_spec
-        elif r_elbow is not None and ELBOW_ANGLE_RANGE[0] <= r_elbow <= ELBOW_ANGLE_RANGE[-1]:
-            self.custom_connections_style[right_elbow_conn] = self.check_spec
-        else:
-            self.custom_connections_style[right_elbow_conn] = self.good_spec
 
         if l_shldr is not None and l_shldr > SHOULDERS_ANGLE_THRESHOLD:
             self.custom_connections_style[left_shoulder_conn] = self.bad_spec

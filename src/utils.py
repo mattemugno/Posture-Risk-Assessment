@@ -95,7 +95,7 @@ def rescale_frame(frame, percent=50):
     return cv2.resize(frame, dim, interpolation=cv2.INTER_AREA)
 
 
-def show_angles_in_box(image, l_elbow, r_elbow, l_shldr, r_shldr, trunk_incl):
+def show_angles_in_box(image, l_shldr, r_shldr, trunk_incl):
     # Show angles in box
     if l_shldr is None:
         l_shldr = 'None'
@@ -112,16 +112,6 @@ def show_angles_in_box(image, l_elbow, r_elbow, l_shldr, r_shldr, trunk_incl):
     else:
         trunk_incl = str("{:.2f}".format(trunk_incl))
 
-    if l_elbow is None:
-        l_elbow = 'None'
-    else:
-        l_elbow = str("{:.2f}".format(l_elbow))
-
-    if r_elbow is None:
-        r_elbow = 'None'
-    else:
-        r_elbow = str("{:.2f}".format(r_elbow))
-
     cv2.putText(image, "Left shoulder angle: " + l_shldr,
                 (30, 40),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
@@ -130,12 +120,6 @@ def show_angles_in_box(image, l_elbow, r_elbow, l_shldr, r_shldr, trunk_incl):
                 cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
     cv2.putText(image, "Trunk angle: " + trunk_incl,
                 (30, 80),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
-    cv2.putText(image, "Left elbow angle: " + l_elbow,
-                (30, 100),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
-    cv2.putText(image, "Right elbow angle: " + r_elbow,
-                (30, 120),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
 
 

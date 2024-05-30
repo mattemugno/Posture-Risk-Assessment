@@ -1,16 +1,14 @@
 import json
-import logging
 import os
 
 import pandas as pd
 import seaborn as sns
-
 from matplotlib import pyplot as plt
 from matplotlib.image import imread
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 
 from src.config import MAX_HOLDING_TIME, SHOULDERS_ANGLE_RANGE, TRUNK_INCL_RANGE, \
-    TRUNK_INCL_THRESHOLD, SHOULDERS_ANGLE_THRESHOLD, base_dir, data_path
+    TRUNK_INCL_THRESHOLD, SHOULDERS_ANGLE_THRESHOLD, base_dir, data_path, INTERVAL
 from src.utils import set_logger, calculate_posture_status
 
 set_logger()
@@ -212,8 +210,8 @@ class PostureEvaluation:
         for ax in axs:
             ax.axhline(y=SHOULDERS_ANGLE_RANGE[0], color='green', linestyle='--')
             ax.axhline(y=SHOULDERS_ANGLE_RANGE[-1], color='red', linestyle='--')
-            ax.set_xticks(time_labels[::20])
-            ax.set_xticklabels(time_labels[::20], rotation=90, ha='right')
+            ax.set_xticks(time_labels[::INTERVAL])
+            ax.set_xticklabels(time_labels[::INTERVAL], rotation=90, ha='right')
 
         fig.patch.set_facecolor('#ffffff')
         fig.tight_layout()
@@ -259,8 +257,8 @@ class PostureEvaluation:
         axs[2].set_yticklabels(y_labels)
 
         for ax in axs:
-            ax.set_xticks(time_labels[::20])
-            ax.set_xticklabels(time_labels[::20], rotation=90, ha='right')
+            ax.set_xticks(time_labels[::INTERVAL])
+            ax.set_xticklabels(time_labels[::INTERVAL], rotation=90, ha='right')
 
         fig.patch.set_facecolor('#ffffff')
         fig.tight_layout()
