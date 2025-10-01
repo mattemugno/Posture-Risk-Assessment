@@ -183,7 +183,7 @@ class PoseDetector:
                 trunk_incl = calculate_angle_vertical(self.left_shoulder, self.left_hip)
 
         if trunk_incl is not None:
-            trunk_incl = round(trunk_incl, 2)
+            trunk_incl = round(trunk_incl, 2) + 5
 
         return l_shldr, r_shldr, trunk_incl
 

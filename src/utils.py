@@ -12,6 +12,7 @@ from src.config import RESIZE_PERCENT, MAX_HOLDING_TIME, base_dir
 
 
 def set_logger():
+    return
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s",
@@ -33,7 +34,7 @@ def visualize_angles(image, angle, joint, width, height):
 
         cv2.putText(image, str(angle),
                     tuple(text_position),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2, cv2.LINE_AA
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 3, cv2.LINE_AA
                     )
 
 
