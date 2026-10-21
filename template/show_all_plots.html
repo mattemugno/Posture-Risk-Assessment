@@ -10,27 +10,49 @@
     <button class="button button-secondary back-button" id="back-button"><svg class="icon" aria-hidden="true"><use href="#icon-back"></use></svg>Back to workspace</button>
 </div>
 <div class="session-strip"><span class="session-file"><svg class="icon" aria-hidden="true"><use href="#icon-folder"></use></svg><span>{{ json_file }}</span></span><span class="session-strip-note">Recorded session <span aria-hidden="true">/</span> Shoulders &amp; trunk</span></div>
-<div class="report-grid">
+<section class="chart-controls" id="chart-controls" aria-label="Chart time interval" hidden>
+    <form class="range-form" id="range-form">
+        <label for="range-start">From (s)<input id="range-start" type="number" min="0" step="any" required></label>
+        <label for="range-end">To (s)<input id="range-end" type="number" min="0" step="any" required></label>
+        <button class="button button-secondary" type="submit">Apply range</button>
+        <button class="button button-secondary" id="reset-zoom" type="button">Reset zoom</button>
+    </form>
+    <p>Drag to zoom; hover or tap for values. Times are seconds from the first sample. Risk percentages cover the full session.</p>
+</section>
+<p class="chart-message" id="chart-message" role="status" aria-live="polite" {% if has_samples %}hidden{% endif %}>{% if has_samples %}Loading interactive charts…{% else %}This session has no complete posture samples to display.{% endif %}</p>
+<div class="report-grid" id="session-charts" data-chart-url="{{ url_for('session_data', json_file=json_file) }}">
     <section class="panel chart-card" aria-labelledby="angles-title">
         <div class="chart-heading"><div><p class="eyebrow">01 / Movement</p><h2 id="angles-title">Joint angles</h2><p>Shoulder and trunk angles over time.</p></div><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="#icon-chart"></use></svg></span></div>
-        <figure class="chart-canvas"><img alt="Right shoulder, left shoulder and trunk angle plots over time" id="plot" src="{{ url_for('plot_posture_in_time', json_file=json_file) }}"></figure>
-        <div class="chart-hint"><svg class="icon" aria-hidden="true"><use href="#icon-arrow"></use></svg>Swipe across the chart to explore</div>
+        <figure class="chart-canvas">
+            <div class="interactive-chart" id="angles-chart" role="img" aria-label="Interactive shoulder and trunk angle plots. Drag to zoom or use the interval controls." hidden></div>
+            <img class="chart-fallback" alt="Right shoulder, left shoulder and trunk angle plots over time" id="plot" {% if has_samples %}src="{{ url_for('plot_posture_in_time', json_file=json_file) }}"{% else %}hidden{% endif %}>
+        </figure>
     </section>
     <section class="panel chart-card" aria-labelledby="status-title">
         <div class="chart-heading"><div><p class="eyebrow">02 / Patterns</p><h2 id="status-title">Posture status</h2><p>How posture changes throughout the session.</p></div><span class="icon-tile icon-tile-blue"><svg class="icon" aria-hidden="true"><use href="#icon-wave"></use></svg></span></div>
-        <figure class="chart-canvas"><img alt="Posture status over time for both shoulders and the trunk" id="postureStatus" src="{{ url_for('plot_posture_status', json_file=json_file) }}"></figure>
-        <div class="chart-hint"><svg class="icon" aria-hidden="true"><use href="#icon-arrow"></use></svg>Swipe across the chart to explore</div>
+        <figure class="chart-canvas">
+            <div class="interactive-chart" id="status-chart" role="img" aria-label="Interactive posture status plots. Drag to zoom or use the interval controls." hidden></div>
+            <img class="chart-fallback" alt="Posture status over time for both shoulders and the trunk" id="postureStatus" {% if has_samples %}src="{{ url_for('plot_posture_status', json_file=json_file) }}"{% else %}hidden{% endif %}>
+        </figure>
     </section>
     <section class="panel chart-card chart-wide" aria-labelledby="heatmap-title">
         <div class="chart-heading"><div><p class="eyebrow">03 / Overview</p><h2 id="heatmap-title">Your movement, mapped.</h2><p>Angle intensity across each body region.</p></div><span class="icon-tile icon-tile-sand"><svg class="icon" aria-hidden="true"><use href="#icon-grid"></use></svg></span></div>
-        <figure class="chart-canvas"><img alt="Heatmap of left shoulder, right shoulder and trunk angles over time" id="plot_heatmap" src="{{ url_for('plot_heatmap', json_file=json_file) }}"></figure>
-        <div class="chart-hint"><svg class="icon" aria-hidden="true"><use href="#icon-arrow"></use></svg>Swipe across the chart to explore</div>
+        <figure class="chart-canvas">
+            <div class="interactive-chart interactive-chart-heatmap" id="heatmap-chart" role="img" aria-label="Interactive angle heatmap. Hover or tap a cell for its angle and time." hidden></div>
+            <img class="chart-fallback" alt="Heatmap of left shoulder, right shoulder and trunk angles over time" id="plot_heatmap" {% if has_samples %}src="{{ url_for('plot_heatmap', json_file=json_file) }}"{% else %}hidden{% endif %}>
+        </figure>
     </section>
     <section class="panel chart-card chart-wide" aria-labelledby="risk-title">
         <div class="chart-heading"><div><p class="eyebrow">04 / Balance</p><h2 id="risk-title">Posture risk distribution</h2><p>A breakdown of acceptable and not acceptable posture.</p></div><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="#icon-donut"></use></svg></span></div>
-        <figure class="chart-canvas"><img alt="Acceptable and not acceptable posture percentages for each shoulder and the trunk" id="piecharts" src="{{ url_for('plot_pie_charts', json_file=json_file) }}"></figure>
-        <div class="chart-hint"><svg class="icon" aria-hidden="true"><use href="#icon-arrow"></use></svg>Swipe across the chart to explore</div>
+        <figure class="chart-canvas">
+            <div class="interactive-chart interactive-chart-risk" id="risk-chart" role="img" aria-label="Interactive risk distribution for the whole session. Hover or tap a segment for its percentage." hidden></div>
+            <img class="chart-fallback" alt="Acceptable and not acceptable posture percentages for each shoulder and the trunk" id="piecharts" {% if has_samples %}src="{{ url_for('plot_pie_charts', json_file=json_file) }}"{% else %}hidden{% endif %}>
+        </figure>
     </section>
 </div>
+{% if has_samples %}<noscript><p class="chart-message">Enable JavaScript to use interactive charts. The static reports are available above.</p></noscript>{% endif %}
 {% endblock %}
-{% block scripts %}<script src="{{ url_for('static', filename='js/statistics.js') }}"></script>{% endblock %}
+{% block scripts %}
+<script defer src="{{ url_for('static', filename='vendor/plotly-cartesian-4.1.1.min.js') }}"></script>
+<script defer src="{{ url_for('static', filename='js/statistics.js') }}"></script>
+{% endblock %}

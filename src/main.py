@@ -8,7 +8,7 @@ from flask import Flask, Response, abort, render_template, request
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
 from src.PoseManager import PoseManager
-from src.config import template_folder, base_dir, data_path
+from src.config import base_dir, data_path, template_folder
 from src.utils import set_logger
 
 set_logger()
@@ -45,6 +45,13 @@ def get_posture():
     if pose_manager.posture is None:
         abort(400, description='Select a session first.')
     return pose_manager.posture
+
+
+def png_response(figure):
+    """Serialize a chart using the same PNG response for every report route."""
+    output = io.BytesIO()
+    FigureCanvas(figure).print_png(output)
+    return Response(output.getvalue(), mimetype='image/png')
 
 
 @app.route('/')
@@ -95,7 +102,8 @@ def show_all_plots():
     if pose_manager.posture is None:
         return render_template('index.html', error='Select a session first.'), 400
     return render_template('show_all_plots.html',
-                           json_file=os.path.basename(pose_manager.posture.data_path))
+                           json_file=os.path.basename(pose_manager.posture.data_path),
+                           has_samples=bool(pose_manager.posture.time))
 
 
 @app.route('/get_json_files', methods=['GET'])
@@ -104,31 +112,29 @@ def get_json_files():
     return {'json_files': json_files}
 
 
+@app.route('/session_data')
+@synchronized('posture_lock')
+def session_data():
+    if not request.args.get('json_file'):
+        abort(400, description='Select a session first.')
+    posture = get_posture()
+    try:
+        return posture.to_chart_data()
+    except (ValueError, TypeError, OverflowError):
+        abort(400, description='Unable to read chart values from the selected session.')
+
+
 @app.route('/plot')
 @synchronized('posture_lock')
 def plot_posture_in_time():
-    fig, axs = get_posture().plot_angles_over_time()
-
-    # plot shoulder
-    '''ax = axs[0]
-    get_image_zoomed(ax)'''
-
-    # plot trunk
-    '''ax = axs[2]
-    get_image_zoomed(ax)'''
-
-    output = io.BytesIO()
-    FigureCanvas(fig).print_png(output)
-    return Response(output.getvalue(), mimetype='image/png')
+    figure, _ = get_posture().plot_angles_over_time()
+    return png_response(figure)
 
 
 @app.route('/postureStatus')
 @synchronized('posture_lock')
 def plot_posture_status():
-    fig = get_posture().plot_posture_status()
-    output = io.BytesIO()
-    FigureCanvas(fig).print_png(output)
-    return Response(output.getvalue(), mimetype='image/png')
+    return png_response(get_posture().plot_posture_status())
 
 
 @app.route('/piecharts')
@@ -137,19 +143,13 @@ def plot_pie_charts():
     posture = get_posture()
     pose_manager.reset_posture_var()
     posture.calculate_percentages()
-    fig = posture.plot_pie_charts()
-    output = io.BytesIO()
-    FigureCanvas(fig).print_png(output)
-    return Response(output.getvalue(), mimetype='image/png')
+    return png_response(posture.plot_pie_charts())
 
 
 @app.route('/plot_heatmap')
 @synchronized('posture_lock')
 def plot_heatmap():
-    fig = get_posture().plot_heatmap()
-    output = io.BytesIO()
-    FigureCanvas(fig).print_png(output)
-    return Response(output.getvalue(), mimetype='image/png')
+    return png_response(get_posture().plot_heatmap())
 
 
 def gen():

@@ -6,7 +6,7 @@ from src.config import RESIZE_PERCENT
 from src.utils import rescale_frame
 
 
-class VideoCamera(object):
+class VideoCamera:
     """
     This class handles camera methods
     """
@@ -51,8 +51,7 @@ class VideoCamera(object):
         if not success or frame is None:
             return None, None
 
-        if frame is not None:
-            frame = rescale_frame(frame, percent=RESIZE_PERCENT)
+        frame = rescale_frame(frame, percent=RESIZE_PERCENT)
 
         # Recolor image to RGB
         image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)

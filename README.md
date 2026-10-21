@@ -23,7 +23,8 @@ Workplace ergonomics is crucial for preventing musculoskeletal disorders. This p
 - **Joint angles**: Estimates left/right shoulder angles and trunk inclination from 2D landmarks.
 - **Live feedback**: Overlays angles and colored body connections, with an optional segmentation mask.
 - **Sessions**: Samples angles approximately once per second while recording and saves them in `data/*.json` when the session is stopped.
-- **Statistics**: Loads a saved JSON session and displays angle plots, posture status, a heatmap, and risk percentage pie charts. `data/data_old.json` is included for trying the statistics without a camera.
+- **Statistics**: Loads a saved JSON session and displays interactive angle plots, posture status, a heatmap, and risk percentage doughnuts. `data/data_old.json` is included for trying the statistics without a camera.
+- **Chart exploration**: Hover or tap to inspect values, drag to zoom, use the chart toolbar to pan, or apply a time interval with the From/To fields. The three time reports share the selected interval. Risk percentages always describe the full session, using the existing calculations.
 
 ## Installation
 
@@ -70,6 +71,8 @@ Open <http://127.0.0.1:5000>.
 3. Select a JSON file and click **Show Statistics** to view the four reports. You can select `data_old.json` without opening the camera.
 4. Close the camera when finished. Any active recording session is saved before the camera is released.
 
+The statistics page uses a locally bundled Plotly.js library and works without a chart CDN or new Python dependencies. Each time chart provides zoom, pan, reset, and PNG download controls. **Reset zoom** restores the full interval across all time charts. The original PNG routes remain available and are displayed if interactive loading fails or JavaScript is disabled.
+
 ## Models
 The application uses the legacy MediaPipe Holistic API (`mp.solutions.holistic`). `MODEL_COMPLEXITY` defaults to `0`; MediaPipe may download its lightweight pose model the first time the camera is opened, requiring internet access. The `model_path` setting for `pose_landmarker.task` is currently unused.
 
@@ -83,10 +86,13 @@ The application uses the legacy MediaPipe Holistic API (`mp.solutions.holistic`)
 | `src/PoseDetector.py` | MediaPipe inference, angle estimation, overlays, and JSON recording |
 | `src/PostureEvaluation.py` | Loading recorded data and generating statistics |
 | `src/plot_style.py` | Shared chart colors, typography, and axis styling |
+| `src/video_overlay.py` | Camera angle labels, summary card, and cached font rendering |
 | `src/utils.py` | Geometry, posture status rules, and drawing helpers |
 | `src/config.py` | Camera, thresholds, model complexity, and paths |
 | `template/` | Shared page layout, live view, and statistics HTML pages |
 | `static/css/`, `static/js/` | Stylesheets and browser scripts served by Flask |
+| `static/vendor/` | Pinned Plotly.js Cartesian bundle and MIT license |
+| `static/fonts/` | Bundled Liberation Sans fonts and SIL Open Font License for camera text |
 | `data/`, `img/` | Recorded samples and chart/placeholder images |
 | `pyproject.toml`, `uv.lock`, `.python-version` | Project dependencies, locked versions, and Python interpreter |
 
@@ -123,5 +129,5 @@ Commit both lockfiles. `uv sync --locked` installs the recorded versions and rej
 
 - A connected webcam is required for recording and segmentation; saved session statistics remain available without one.
 - The posture status plots and risk percentages use different holding-time counting logic. Time is counted in samples rather than timestamp differences, so risk percentages need review before quantitative use.
-- Samples missing any of the three angles are excluded from statistics; empty sessions are not handled.
+- Samples missing any of the three angles are excluded from statistics. Interactive reports show an empty state for sessions without complete samples; the legacy PNG routes do not handle empty sessions.
 - The camera and recording session are shared across browser clients in one Python process. Each statistics page retains its selected JSON file.

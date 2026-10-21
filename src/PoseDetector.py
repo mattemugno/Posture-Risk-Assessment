@@ -1,17 +1,30 @@
-from datetime import datetime
 import json
 import logging
 import os
 import time
+from datetime import datetime
 from uuid import uuid4
 
 import cv2
 import mediapipe as mp
 
 from src.VideoCamera import VideoCamera
-from src.config import excluded_landmarks, landmark_to_coords, SHOULDERS_ANGLE_THRESHOLD, \
-    TRUNK_INCL_THRESHOLD, SHOULDERS_ANGLE_RANGE, TRUNK_INCL_RANGE, data_path, DEVICE_ID
-from src.utils import visualize_angles, show_angles_in_box, calculate_angle_vertical, calculate_angle
+from src.config import (
+    DEVICE_ID,
+    SHOULDERS_ANGLE_RANGE,
+    SHOULDERS_ANGLE_THRESHOLD,
+    TRUNK_INCL_RANGE,
+    TRUNK_INCL_THRESHOLD,
+    data_path,
+    excluded_landmarks,
+    landmark_to_coords,
+)
+from src.utils import (
+    calculate_angle,
+    calculate_angle_vertical,
+    show_angles_in_box,
+    visualize_angles,
+)
 
 
 class PoseDetector:
@@ -56,9 +69,9 @@ class PoseDetector:
         self.check_spec = self.mp_drawing.DrawingSpec(color=(0, 255, 255), thickness=2,
                                                       circle_radius=2)
 
-        self.custom_connections_style = {}
-        for connection in self.custom_connections:
-            self.custom_connections_style[connection] = self.good_spec
+        self.custom_connections_style = {
+            connection: self.good_spec for connection in self.custom_connections
+        }
 
         try:
             self.holistic = self.mp_holistic.Holistic(
@@ -102,7 +115,6 @@ class PoseDetector:
                 return png.tobytes()
 
             try:
-
                 # Extract landmarks
                 landmarks = results.pose_landmarks.landmark
 
@@ -124,30 +136,24 @@ class PoseDetector:
                 # Get joint angles
                 l_shldr, r_shldr, trunk_incl = self.get_angles()
 
-                # Visualize angles
-                visualize_angles(image, l_shldr, self.left_shoulder, self.cap.width, self.cap.height)
-                visualize_angles(image, r_shldr, self.right_shoulder, self.cap.width, self.cap.height)
-                visualize_angles(image, trunk_incl, self.left_hip, self.cap.width, self.cap.height)
-
-                cv2.rectangle(image, (20, 20), (220, 90), (0, 0, 0), -1)
-                # cv2.rectangle(image, (20, 20), (220, 130), (0, 0, 0), -1)
-
-                show_angles_in_box(image, l_shldr, r_shldr, trunk_incl)
-
                 self.set_custom_landmark(l_shldr, r_shldr, trunk_incl)
                 self.draw_landmarks(image, results)
 
-                current_time = time.time()
-                if self.record_session:
-                    if current_time - self.last_time_updated >= self.sampling_rate:
-                        self.data.append({
-                            'timestamp': current_time,
-                            'l_shldr': l_shldr,
-                            'r_shldr': r_shldr,
-                            'trunk_incl': trunk_incl
-                        })
+                # Keep text above the skeleton for readability.
+                visualize_angles(image, l_shldr, self.left_shoulder, self.cap.width, self.cap.height)
+                visualize_angles(image, r_shldr, self.right_shoulder, self.cap.width, self.cap.height)
+                visualize_angles(image, trunk_incl, self.left_hip, self.cap.width, self.cap.height)
+                show_angles_in_box(image, l_shldr, r_shldr, trunk_incl)
 
-                        self.last_time_updated = current_time
+                current_time = time.time()
+                if self.record_session and current_time - self.last_time_updated >= self.sampling_rate:
+                    self.data.append({
+                        'timestamp': current_time,
+                        'l_shldr': l_shldr,
+                        'r_shldr': r_shldr,
+                        'trunk_incl': trunk_incl
+                    })
+                    self.last_time_updated = current_time
 
                 if self.enable_segmentation:
                     _, png = cv2.imencode('.png', 255 * seg_mask)
@@ -155,9 +161,8 @@ class PoseDetector:
                     _, png = cv2.imencode('.png', image)
                 return png.tobytes()
 
-            except Exception as e:
-                logging.exception(e)
-                pass
+            except Exception as error:
+                logging.exception(error)
 
     def get_angles(self):
         """
@@ -253,7 +258,6 @@ class PoseDetector:
 
         if self.enable_face_landmarks:
             self.mp_drawing.draw_landmarks(image, results.face_landmarks, self.mp_holistic.FACEMESH_CONTOURS,
-                                           # landmark_drawing_spec=None,
                                            connection_drawing_spec=mp.solutions.drawing_styles
                                            .get_default_face_mesh_contours_style())
 
@@ -284,6 +288,7 @@ class PoseDetector:
         current_time = datetime.now().strftime('%d-%m-%Y-%H-%M-%S')
         filename = f'{current_time}-{uuid4().hex}.json'
 
-        with open(os.path.join(path_to_save, filename), 'x') as f:
-            json.dump(self.data, f)
-        logging.info('Saved %d samples to %s', len(self.data), os.path.join(path_to_save, filename))
+        output_path = os.path.join(path_to_save, filename)
+        with open(output_path, 'x') as output:
+            json.dump(self.data, output)
+        logging.info('Saved %d samples to %s', len(self.data), output_path)

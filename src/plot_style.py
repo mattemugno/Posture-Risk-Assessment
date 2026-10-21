@@ -2,16 +2,17 @@
 
 from matplotlib.colors import LinearSegmentedColormap
 
-INK = '#283c34'
-MUTED = '#78847c'
-GRID = '#e9ede7'
-GREEN = '#4d8a76'
-BLUE = '#718bb4'
-GOLD = '#bd9a62'
-ROSE = '#c87879'
+INK = '#152b23'
+MUTED = '#3f5449'
+GRID = '#b2c0b7'
+GREEN = '#176448'
+BLUE = '#245aa6'
+GOLD = '#8a530a'
+ROSE = '#ac293b'
 SERIES_COLORS = (GREEN, BLUE, GOLD)
+ANGLE_COLORS = ('#edf3ed', '#aacdba', '#6eaa91', '#d1ad79', '#c77872')
 ANGLE_CMAP = LinearSegmentedColormap.from_list(
-    'posture_angles', ['#edf3ed', '#aacdba', '#6eaa91', '#d1ad79', '#c77872']
+    'posture_angles', ANGLE_COLORS
 )
 
 
@@ -22,11 +23,11 @@ def style_axis(ax):
         ax.spines[side].set_visible(False)
     for side in ('left', 'bottom'):
         ax.spines[side].set_color(GRID)
-        ax.spines[side].set_linewidth(0.7)
-    ax.tick_params(axis='both', colors=MUTED, labelsize=9, length=0, pad=8)
-    ax.xaxis.label.set(color=MUTED, fontsize=9)
-    ax.yaxis.label.set(color=MUTED, fontsize=9)
-    ax.grid(axis='y', color=GRID, linewidth=0.7)
+        ax.spines[side].set_linewidth(0.9)
+    ax.tick_params(axis='both', colors=MUTED, labelsize=11, length=0, pad=8)
+    ax.xaxis.label.set(color=MUTED, fontsize=11)
+    ax.yaxis.label.set(color=MUTED, fontsize=11)
+    ax.grid(axis='y', color=GRID, linewidth=0.9)
 
 
 def finish_timeline(fig, axes, time_labels, interval, left=0.15):

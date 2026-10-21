@@ -9,7 +9,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.patches import Rectangle
 
-from src.config import RESIZE_PERCENT, MAX_HOLDING_TIME, base_dir
+from src.config import MAX_HOLDING_TIME, RESIZE_PERCENT, base_dir
+from src.video_overlay import draw_angle_label, draw_angle_summary
 
 
 def set_logger():
@@ -50,15 +51,9 @@ def visualize_angles(image, angle, joint, width, height):
     width = int(width * RESIZE_PERCENT / 100)
     height = int(height * RESIZE_PERCENT / 100)
 
-    if angle is not None:
-        offset_x = 10
-        offset_y = -10
-        text_position = np.multiply(joint, [width, height]).astype(int) + np.array([offset_x, offset_y])
-
-        cv2.putText(image, str(angle),
-                    tuple(text_position),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 3, cv2.LINE_AA
-                    )
+    if angle is not None and joint is not None:
+        position = np.multiply(joint, [width, height]).astype(int)
+        draw_angle_label(image, angle, position)
 
 
 def calculate_angle(a, b, c):
@@ -120,31 +115,8 @@ def rescale_frame(frame, percent=50):
 
 
 def show_angles_in_box(image, l_shldr, r_shldr, trunk_incl):
-    # Show angles in box
-    if l_shldr is None:
-        l_shldr = 'None'
-    else:
-        l_shldr = str("{:.2f}".format(l_shldr))
-
-    if r_shldr is None:
-        r_shldr = 'None'
-    else:
-        r_shldr = str("{:.2f}".format(r_shldr))
-
-    if trunk_incl is None:
-        trunk_incl = 'None'
-    else:
-        trunk_incl = str("{:.2f}".format(trunk_incl))
-
-    cv2.putText(image, "Left shoulder angle: " + l_shldr,
-                (30, 40),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
-    cv2.putText(image, "Right shoulder angle: " + r_shldr,
-                (30, 60),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
-    cv2.putText(image, "Trunk angle: " + trunk_incl,
-                (30, 80),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
+    """Draw the three angle labels with consistent formatting and positions."""
+    draw_angle_summary(image, l_shldr, r_shldr, trunk_incl)
 
 
 def calculate_posture_status(values, threshold, range):
@@ -181,26 +153,20 @@ def get_image_zoomed(ax):
     zoom_outside(ax_new, xlim=(180, 230), ylim=(10, 110), new_fig=fig_new, pos=[1., 0.35, 0.3, 0.3], color="red")
     zoom_outside(ax_new, xlim=(380, 420), ylim=(25, 50), new_fig=fig_new, pos=[1., -0.05, 0.3, 0.3], color="#D5D000")
 
-    # shoulder
-    '''zoom_outside(ax_new, xlim=(20, 40), ylim=(0, 25), new_fig=fig_new, pos=[1., 0.75, 0.3, 0.3], color="blue")
-    zoom_outside(ax_new, xlim=(285, 320), ylim=(5, 70), new_fig=fig_new, pos=[1., 0.35, 0.3, 0.3], color="#D5D000")
-    zoom_outside(ax_new, xlim=(412, 448), ylim=(100, 140), new_fig=fig_new, pos=[1., -0.05, 0.3, 0.3], color="red")'''
-
     fig_new.savefig(os.path.join(base_dir, 'img', 'zoomed_plot_trunk.png'), bbox_inches='tight')
-    # fig_new.savefig(os.path.join(base_dir, 'img', 'zoomed_plot_shoulder.png'), bbox_inches='tight')
 
 
-def zoom_outside(ax, xlim, ylim, new_fig, pos, color="red", linewidth=2, roiKwargs={}):
-    roiKwargs = dict([("fill", False), ("linestyle", "dashed"),
-                      ("color", color), ("linewidth", linewidth)]
-                     + list(roiKwargs.items()))
+def zoom_outside(ax, xlim, ylim, new_fig, pos, color="red", linewidth=2, roiKwargs=None):
+    roi_options = {'fill': False, 'linestyle': 'dashed', 'color': color, 'linewidth': linewidth}
+    if roiKwargs is not None:
+        roi_options.update(roiKwargs)
 
     roi = [xlim[0], ylim[0], xlim[1], ylim[1]]
     ax_new = new_fig.add_axes(pos)
     ax_new.set_xlim(xlim)
     ax_new.set_ylim(ylim)
 
-    rect = Rectangle([roi[0], roi[1]], roi[2] - roi[0], roi[3] - roi[1], **roiKwargs)
+    rect = Rectangle([roi[0], roi[1]], roi[2] - roi[0], roi[3] - roi[1], **roi_options)
     ax.add_patch(rect)
 
     for line in ax.get_lines():

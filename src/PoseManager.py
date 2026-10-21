@@ -67,9 +67,7 @@ class PoseManager:
 
     def destroy_posture_eval(self):
         with self.posture_lock:
-            if self.posture is not None:
-                del self.posture
-                self.posture = None
+            self.posture = None
 
     def reset_posture_var(self):
         with self.posture_lock:

@@ -1,22 +1,38 @@
 import json
 import logging
+import math
 import os
 
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 from matplotlib.image import imread
-from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 
-from src.config import MAX_HOLDING_TIME, SHOULDERS_ANGLE_RANGE, TRUNK_INCL_RANGE, \
-    TRUNK_INCL_THRESHOLD, SHOULDERS_ANGLE_THRESHOLD, base_dir, data_path, INTERVAL
+from src.config import (
+    INTERVAL,
+    MAX_HOLDING_TIME,
+    SHOULDERS_ANGLE_RANGE,
+    SHOULDERS_ANGLE_THRESHOLD,
+    TRUNK_INCL_RANGE,
+    TRUNK_INCL_THRESHOLD,
+    base_dir,
+    data_path,
+)
+from src.plot_style import (
+    ANGLE_CMAP,
+    ANGLE_COLORS,
+    GREEN,
+    GRID,
+    INK,
+    MUTED,
+    ROSE,
+    SERIES_COLORS,
+    finish_timeline,
+    style_axis,
+)
 from src.utils import calculate_posture_status
-from src.plot_style import ANGLE_CMAP, GREEN, INK, MUTED, ROSE, SERIES_COLORS, \
-    finish_timeline, style_axis
 
-
-### Trunk inclination -- alfa angle
-### Shoulder's angles
 
 class PostureEvaluation:
     """
@@ -26,7 +42,7 @@ class PostureEvaluation:
     def __init__(self, filename):
         """
         Initializes the PostureEvaluation instance
-        :arg data_path: Path of the json file
+        :arg filename: Name of a JSON file in the configured data directory.
         """
 
         self.data_path = os.path.realpath(os.path.join(data_path, filename))
@@ -74,9 +90,7 @@ class PostureEvaluation:
 
         for gamma_r, gamma_l, alfa in zip(self.r_shldr, self.l_shldr, self.trunk):
 
-            # 0 < gamma < 20 acceptable
-            # 20 < gamma < 60 check holding time
-            # gamma > 60 not acceptable
+            # Intermediate angles use the existing sample-based holding counter.
             if gamma_r is not None:
                 time_r += 1
                 if self.shoulders_angle_range[0] <= gamma_r <= self.shoulders_angle_range[-1]:
@@ -101,9 +115,6 @@ class PostureEvaluation:
                 else:
                     holding_time_l = 0
 
-            # 0 < alfa < 20 acceptable
-            # 20 < alfa < 60 check holding time
-            # alfa > 60 not acceptable
             if alfa is not None:
                 time_t += 1
                 if self.trunk_incl_range[0] <= alfa <= self.trunk_incl_range[-1]:
@@ -121,6 +132,50 @@ class PostureEvaluation:
         bad_posture_percentage_t = (self.not_acceptable_count_trunk / time_t) * 100
 
         self.not_acceptable_percentages = bad_posture_percentage_r, bad_posture_percentage_l, bad_posture_percentage_t
+
+    def to_chart_data(self):
+        """Expose the existing report values without recomputing risk in the browser."""
+        for values in (self.time, self.r_shldr, self.l_shldr, self.trunk):
+            if any(not isinstance(value, (int, float)) or not math.isfinite(value)
+                   for value in values):
+                raise ValueError('Session values must be finite numbers.')
+
+        regions = (
+            ('right_shoulder', 'Right shoulder', self.r_shldr,
+             SHOULDERS_ANGLE_THRESHOLD, SHOULDERS_ANGLE_RANGE),
+            ('left_shoulder', 'Left shoulder', self.l_shldr,
+             SHOULDERS_ANGLE_THRESHOLD, SHOULDERS_ANGLE_RANGE),
+            ('trunk', 'Trunk', self.trunk, TRUNK_INCL_THRESHOLD, TRUNK_INCL_RANGE),
+        )
+        if self.time and self.not_acceptable_percentages is None:
+            self.calculate_percentages()
+
+        # Keep the same labels and percentage order as the existing PNG report.
+        risk = [
+            {'label': label, 'acceptable': 100 - percentage, 'not_acceptable': percentage}
+            for label, percentage in zip(
+                ('Left shoulder', 'Right shoulder', 'Trunk'),
+                self.not_acceptable_percentages or (),
+            )
+        ]
+        return {
+            'timestamps': self.time,
+            'series': [
+                {'key': key, 'label': label, 'angles': values,
+                 'status': calculate_posture_status(values, threshold, angle_range),
+                 'color': color}
+                for (key, label, values, threshold, angle_range), color
+                in zip(regions, SERIES_COLORS)
+            ],
+            'status_labels': ['Acceptable', 'Checking', 'Not Acceptable'],
+            'angle_guides': [SHOULDERS_ANGLE_RANGE[0], SHOULDERS_ANGLE_RANGE[-1]],
+            'risk': risk,
+            'style': {
+                'ink': INK, 'muted': MUTED, 'grid': GRID,
+                'acceptable': GREEN, 'not_acceptable': ROSE,
+                'heatmap': list(ANGLE_COLORS),
+            },
+        }
 
     def plot_pie_charts(self):
         """Show the existing risk percentages as three annotated doughnuts."""
@@ -144,14 +199,14 @@ class PostureEvaluation:
             ax = axs[2 * i]
             wedges, _ = ax.pie(
                 data, colors=[GREEN, ROSE], startangle=90, counterclock=False,
-                wedgeprops={'width': 0.18, 'edgecolor': 'white', 'linewidth': 2}
+                wedgeprops={'width': 0.22, 'edgecolor': 'white', 'linewidth': 2}
             )
-            ax.set_title(titles[i], pad=16, fontsize=11, fontweight='medium', color=INK)
+            ax.set_title(titles[i], pad=16, fontsize=13, fontweight='medium', color=INK)
             ax.text(0, 0.06, f'{bad_percentage:.1f}%', ha='center', va='center',
-                    fontsize=23, fontweight='medium', color=INK)
-            ax.text(0, -0.24, 'not acceptable', ha='center', fontsize=8, color=MUTED)
+                    fontsize=25, fontweight='medium', color=INK)
+            ax.text(0, -0.24, 'not acceptable', ha='center', fontsize=10, color=MUTED)
             ax.text(0, -1.27, f'{good_percentage:.1f}% acceptable', ha='center',
-                    fontsize=9, color=GREEN)
+                    fontsize=11, color=GREEN)
 
             img = imread(img_paths[i])
             imagebox = OffsetImage(img, zoom=140 / max(img.shape[:2]), dpi_cor=False)
@@ -162,7 +217,7 @@ class PostureEvaluation:
 
         fig.set_facecolor('white')
         fig.legend(wedges, labels, loc='lower center', ncol=2, frameon=False,
-                   fontsize=9, labelcolor=MUTED, bbox_to_anchor=(0.5, 0.005),
+                   fontsize=11, labelcolor=MUTED, bbox_to_anchor=(0.5, 0.005),
                    handlelength=1.1, columnspacing=2.5)
         fig.subplots_adjust(left=0.025, right=0.98, top=0.8, bottom=0.2, wspace=0.18)
         plt.close(fig)
@@ -177,14 +232,14 @@ class PostureEvaluation:
         titles = ['Right shoulder angle', 'Left shoulder angle', 'Trunk angle']
 
         for ax, values, title, color in zip(axs, series, titles, SERIES_COLORS):
-            line, = ax.plot(time_labels, values, color=color, linewidth=1.7)
+            line, = ax.plot(time_labels, values, color=color, linewidth=2.2)
             ax.fill_between(line.get_xdata(orig=False), values, color=color, alpha=0.08)
-            ax.set_title(title, loc='left', fontsize=11, fontweight='medium', color=INK, pad=15)
+            ax.set_title(title, loc='left', fontsize=13, fontweight='medium', color=INK, pad=15)
             ax.set_ylim(top=180)
             ax.axhline(y=SHOULDERS_ANGLE_RANGE[0], color=GREEN,
-                       linestyle=(0, (4, 4)), linewidth=0.8, alpha=0.55)
+                       linestyle=(0, (4, 4)), linewidth=1.2, alpha=0.9)
             ax.axhline(y=SHOULDERS_ANGLE_RANGE[-1], color=ROSE,
-                       linestyle=(0, (4, 4)), linewidth=0.8, alpha=0.55)
+                       linestyle=(0, (4, 4)), linewidth=1.2, alpha=0.9)
 
         axs[1].set_ylabel('Angle (deg)', labelpad=12)
         axs[2].set_xlabel('Time (H:M:S)', labelpad=12)
@@ -205,9 +260,9 @@ class PostureEvaluation:
 
         for ax, values, title, color in zip(
                 axs, [y_right_arm, y_left_arm, y_trunk], titles, SERIES_COLORS):
-            line, = ax.plot(time_labels, values, color=color, linewidth=1.6)
+            line, = ax.plot(time_labels, values, color=color, linewidth=2.2)
             ax.fill_between(line.get_xdata(orig=False), values, color=color, alpha=0.06)
-            ax.set_title(title, loc='left', fontsize=11, fontweight='medium', color=INK, pad=15)
+            ax.set_title(title, loc='left', fontsize=13, fontweight='medium', color=INK, pad=15)
             ax.set_yticks([0, 1, 2])
             ax.set_yticklabels(y_labels)
             ax.set_ylim(-0.18, 2.18)
@@ -219,7 +274,7 @@ class PostureEvaluation:
         return fig
 
     def plot_heatmap(self):
-        """Render the original angle matrix with a softer sequential palette."""
+        """Render the original angle matrix with a high-contrast sequential palette."""
         data = {
             'Time': pd.to_datetime(self.time, unit='s').strftime('%H:%M:%S'),
             'Left Shoulder Angle': self.l_shldr,
@@ -238,12 +293,12 @@ class PostureEvaluation:
         ax.set_xlabel('Time (H:M:S)', labelpad=12)
         ax.set_ylabel('')
         ax.set_title('Posture heatmap over time', loc='left', pad=18,
-                     fontsize=11, fontweight='medium', color=INK)
+                     fontsize=13, fontweight='medium', color=INK)
         ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
         ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
         colorbar = ax.collections[0].colorbar
-        colorbar.ax.tick_params(labelsize=9, colors=MUTED, length=0)
-        colorbar.ax.yaxis.label.set(color=MUTED, fontsize=9)
+        colorbar.ax.tick_params(labelsize=11, colors=MUTED, length=0)
+        colorbar.ax.yaxis.label.set(color=MUTED, fontsize=11)
         fig.set_facecolor('white')
         fig.subplots_adjust(left=0.19, right=0.98, bottom=0.25, top=0.8)
         plt.close(fig)
