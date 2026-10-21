@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import time
+from uuid import uuid4
 
 import cv2
 import mediapipe as mp
@@ -10,9 +11,7 @@ import mediapipe as mp
 from src.VideoCamera import VideoCamera
 from src.config import excluded_landmarks, landmark_to_coords, SHOULDERS_ANGLE_THRESHOLD, \
     TRUNK_INCL_THRESHOLD, SHOULDERS_ANGLE_RANGE, TRUNK_INCL_RANGE, data_path, DEVICE_ID
-from src.utils import visualize_angles, set_logger, show_angles_in_box, calculate_angle_vertical, calculate_angle
-
-set_logger()
+from src.utils import visualize_angles, show_angles_in_box, calculate_angle_vertical, calculate_angle
 
 
 class PoseDetector:
@@ -33,6 +32,11 @@ class PoseDetector:
         :arg sampling_rate: The frequency with which angles are detected. Default is 1 second.
         :arg enable_face_landmarks: Whether to show or not face landmarks. Default is False.
         """
+
+        self.cap = VideoCamera(DEVICE_ID)
+        if not self.cap.isOpen():
+            self.cap.close()
+            raise RuntimeError('No camera available. Connect a camera and try again.')
 
         self.min_detection_confidence = min_detection_confidence
         self.min_tracking_confidence = min_tracking_confidence
@@ -56,16 +60,20 @@ class PoseDetector:
         for connection in self.custom_connections:
             self.custom_connections_style[connection] = self.good_spec
 
-        self.holistic = self.mp_holistic.Holistic(min_detection_confidence=self.min_detection_confidence,
-                                                  min_tracking_confidence=self.min_tracking_confidence,
-                                                  enable_segmentation=True,
-                                                  model_complexity=self.model_complexity
-                                                  )
+        try:
+            self.holistic = self.mp_holistic.Holistic(
+                min_detection_confidence=self.min_detection_confidence,
+                min_tracking_confidence=self.min_tracking_confidence,
+                enable_segmentation=True,
+                model_complexity=self.model_complexity
+            )
+        except Exception:
+            self.cap.close()
+            raise
         self.data = []
         self.data_path = data_path
         self.sampling_rate = sampling_rate
 
-        self.cap = VideoCamera(DEVICE_ID)
         self.start_time = time.time()
         self.last_time_updated = self.start_time
 
@@ -85,8 +93,11 @@ class PoseDetector:
         if self.cap.isOpen():
             image, results = self.cap.get_frame(self.holistic)
 
+            if image is None or results is None:
+                return None
+
             if results.pose_landmarks is None:
-                logging.info("Ignoring empty camera frame.")
+                logging.debug("Ignoring empty camera frame.")
                 _, png = cv2.imencode('.png', image)
                 return png.tobytes()
 
@@ -254,7 +265,13 @@ class PoseDetector:
             connection_drawing_spec=self.custom_connections_style
         )
 
-    def save_data(self, path_to_save=data_path):
+    def close(self):
+        try:
+            self.holistic.close()
+        finally:
+            self.cap.close()
+
+    def save_data(self, path_to_save=None):
         """
         Write data collected from the pose detection to a JSON file.
 
@@ -262,9 +279,11 @@ class PoseDetector:
         :return: None
         """
 
-        current_time = datetime.now().strftime('%d-%m-%H-%M-%S')
-        filename = f'{current_time}.json'
+        if path_to_save is None:
+            path_to_save = self.data_path
+        current_time = datetime.now().strftime('%d-%m-%Y-%H-%M-%S')
+        filename = f'{current_time}-{uuid4().hex}.json'
 
-        with open(os.path.join(data_path, filename), 'w') as f:
-            logging.info('Save data in %s', path_to_save)
+        with open(os.path.join(path_to_save, filename), 'x') as f:
             json.dump(self.data, f)
+        logging.info('Saved %d samples to %s', len(self.data), os.path.join(path_to_save, filename))

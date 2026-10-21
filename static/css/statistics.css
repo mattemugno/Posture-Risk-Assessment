@@ -1,0 +1,47 @@
+.review-toolbar { display: flex; margin-bottom: 24px; }
+.back-button { white-space: nowrap; font-size: 12px; padding-inline: 15px; }
+.back-button .icon { width: 16px; height: 16px; }
+.session-strip { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 17px 0 24px; border-top: 1px solid var(--line); }
+.session-file { display: inline-flex; align-items: center; gap: 9px; min-width: 0; color: var(--accent); font-size: 11px; font-weight: 500; }
+.session-file .icon { width: 16px; height: 16px; }
+.session-file > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.session-strip-note { display: inline-flex; align-items: center; gap: 12px; color: var(--muted); font-size: 10px; white-space: nowrap; }
+.session-strip-note > span { color: #c2ccc0; }
+.report-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+.chart-card { padding: 25px 18px 16px; min-width: 0; overflow: hidden; }
+.chart-wide { grid-column: 1 / -1; }
+.chart-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 0 8px 18px; }
+.chart-heading h2 { margin-top: 7px; font-size: 21px; }
+.chart-heading > div > p:last-child { margin-top: 7px; font-size: 11px; color: var(--muted); }
+.chart-heading .eyebrow { font-size: 8px; }
+.chart-canvas { margin: 0; overflow-x: auto; scrollbar-width: thin; scrollbar-color: #c3d0c0 transparent; }
+.chart-canvas img { display: block; width: 100%; min-width: 480px; height: auto; }
+.chart-wide .chart-canvas img { min-width: 760px; }
+.chart-hint { display: none; }
+#session-review { scroll-margin-top: 24px; }
+
+@media (max-width: 1000px) {
+    .report-grid { gap: 18px; }
+    .chart-card { padding: 22px 12px 14px; }
+    .chart-canvas img { min-width: 430px; }
+}
+@media (max-width: 800px) {
+    .back-button { min-height: 42px; font-size: 11px; }
+    .report-grid { grid-template-columns: minmax(0, 1fr); }
+    .chart-heading { padding: 0 8px 18px; }
+    .chart-heading h2 { font-size: 20px; }
+    .chart-canvas img { min-width: 480px; }
+    .chart-hint { display: flex; gap: 6px; align-items: center; padding: 12px 8px 0; color: #83907f; font-size: 10px; }
+    .chart-hint .icon { width: 13px; height: 13px; }
+}
+@media (max-width: 600px) {
+    .session-strip { flex-direction: column; align-items: flex-start; gap: 8px; padding-bottom: 20px; }
+    .session-file { max-width: 100%; font-size: 10px; }
+    .session-strip-note { padding-left: 25px; font-size: 9px; }
+    .chart-card { padding: 22px 10px 15px; }
+    .report-grid { gap: 16px; }
+    .chart-heading { gap: 10px; }
+    .chart-heading h2 { font-size: 19px; }
+    .chart-heading > div > p:last-child { font-size: 11px; line-height: 1.7; }
+    .chart-canvas img { min-width: 480px; }
+}

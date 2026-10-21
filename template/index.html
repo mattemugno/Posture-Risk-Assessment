@@ -1,218 +1,79 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <!-- Meta Tags -->
-    <meta charset="UTF-8">
-    <meta content="width=device-width, initial-scale=1" name="viewport">
-
-    <!-- CSS Links -->
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- JavaScript Links -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-
-    <title>Pose Estimation</title>
-
-    <!-- Custom CSS -->
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f8f9fa;
-            color: #333;
-            margin: 0;
-            padding: 0;
-            overflow-x: hidden; /* Prevent horizontal scroll */
-        }
-
-        .container {
-            max-width: 100%;
-            padding: 0 10px; /* Add space to the sides of the container */
-        }
-
-        /* Video styles */
-        /* Video container styles */
-        .video-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: flex-start; /* Align items to the start (left) */
-            align-items: center; /* Center items vertically */
-        }
-
-        /* Video styles */
-        #videoFeed {
-            width: 90%; /* Riduce la larghezza del video feed al 90% */
-            height: auto;
-            border-radius: 10px;
-            padding-bottom: 15px;
-            margin-right: 20px;
-            margin-left: 20px;
-        }
-
-        /* Heading styles */
-        h2.text-center {
-            margin-top: 20px;
-            margin-bottom: 20px;
-            font-size: 2.5em;
-            font-weight: bold;
-            color: #0056b3; /* Slightly darker color */
-            text-align: center;
-            position: relative;
-        }
-
-        h2.text-center::after {
-            content: '';
-            display: block;
-            width: 60px;
-            height: 4px;
-            background-color: #0056b3; /* Slightly darker color */
-            margin: 10px auto 0;
-            border-radius: 2px;
-        }
-
-        /* Button group styles */
-        .button-group {
-            flex-basis: 100%; /* Full width on smaller screens */
-            max-width: 100%;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .btn-custom {
-            width: 100%;
-            margin-bottom: 10px;
-            background-color: #007bff;
-            border-color: #007bff;
-            color: #fff;
-            border-radius: 5px; /* Make buttons similar to the previous style */
-            padding: 10px;
-            font-size: 1.1em;
-            transition: background-color 0.3s, border-color 0.3s; /* Add transition for hover effect */
-        }
-
-        .btn-custom:hover {
-            background-color: #0056b3;
-            border-color: #0056b3;
-        }
-
-        @media (min-width: 768px) {
-            .col-lg-9 {
-                flex: 0 0 70%; /* Reduced to 70% width */
-                max-width: 70%; /* Reduced to 70% width */
-            }
-
-            .button-group {
-                flex: 0 0 30%; /* Increased to 30% width */
-                max-width: 30%; /* Increased to 30% width */
-                margin-top: auto;
-                margin-bottom: auto; /* Center vertically */
-            }
-        }
-
-        @media (max-width: 576px) {
-            h2.text-center {
-                font-size: 1.5em;
-            }
-
-            .btn-custom {
-                padding: 8px 16px;
-                font-size: 0.9em;
-            }
-        }
-    </style>
-
-</head>
-<body>
-<div class="container">
-    <!-- Main Content -->
-    <div class="row">
-        <div class="col-lg-10 offset-lg-1 mt-5">
-            <h2 class="text-center">Posture Risk Assessment</h2>
-
-            <!-- Video Feed and Controls -->
-            <div class="video-container">
-                <!-- Video Feed (occupies 3/4 of the width) -->
-                <div class="col-lg-9">
-                    <img id="videoFeed" src="{{ url_for('video_feed') }}">
-                </div>
-
-                <!-- Buttons and Plots (occupies 1/4 of the width) -->
-                <div class="col-lg-3 button-group">
-                    <form action="{{ url_for('tasks') }}" id="tasksForm" method="post">
-                        <input class="btn-custom" id="cameraButton" name="stop" type="submit"
-                               value="Open Video Camera"/>
-                        <input class="btn-custom" id="sessionButton" name="session" type="submit"
-                               value="Start Session"/>
-                        <input class="btn-custom" name="segmask" type="submit" value="Segmentation Mask"/>
-                    </form>
-
-                    <!-- JSON File Selector -->
-                    <form action="{{ url_for('show_all_plots') }}" method="post">
-                        <input class="btn-custom" type="submit" value="Show Statistics"/>
-                        <select class="form-control" id="jsonFileSelector" name="json_file">
-                            <!-- Options will be populated by JavaScript -->
-                        </select>
-                    </form>
+{% extends 'base.html' %}
+{% block styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">{% endblock %}
+{% block navigation %}
+<a class="nav-link is-current" href="{{ url_for('index') }}" aria-current="page">Workspace</a>
+<a class="nav-link" href="#saved-sessions">Saved sessions</a>
+{% endblock %}
+{% block content %}
+{% if error %}
+<div class="notice" role="alert"><svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg><span>{{ error }}</span></div>
+{% endif %}
+<div class="workspace-layout">
+    <section class="panel preview-panel" aria-labelledby="preview-title">
+        <div class="panel-heading">
+            <div class="heading-with-icon"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="#icon-camera"></use></svg></span><h2 id="preview-title">Live view</h2></div>
+            <span class="camera-state {% if camera_open %}is-open{% endif %}"><span></span>Camera {% if camera_open %}open{% else %}closed{% endif %}</span>
+        </div>
+        <div class="video-stage {% if not camera_open %}is-idle{% endif %}">
+            <img id="videoFeed" src="{{ url_for('video_feed') }}" alt="Live camera view with shoulder and trunk angle overlays">
+            {% if not camera_open %}
+            <div class="camera-empty">
+                <div class="empty-art" aria-hidden="true">
+                    <span class="orbit orbit-one"></span><span class="orbit orbit-two"></span>
+                    <svg viewBox="0 0 140 160" class="posture-illustration">
+                        <path class="body-guide" d="M45 23h52M28 138h85M72 28v100"></path>
+                        <circle class="figure-head" cx="76" cy="29" r="12"></circle>
+                        <path class="figure-body" d="m71 51-11 34 30 13 5 38M69 57l20 22h27M59 85H35l-12 50"></path>
+                        <circle class="joint joint-one" cx="71" cy="54" r="5"></circle>
+                        <circle class="joint joint-two" cx="60" cy="85" r="5"></circle>
+                        <circle class="joint joint-three" cx="90" cy="98" r="5"></circle>
+                    </svg>
                 </div>
             </div>
+            {% endif %}
+            <span class="frame-corner corner-top-left" aria-hidden="true"></span><span class="frame-corner corner-top-right" aria-hidden="true"></span>
+            <span class="frame-corner corner-bottom-left" aria-hidden="true"></span><span class="frame-corner corner-bottom-right" aria-hidden="true"></span>
         </div>
-    </div>
+        <div class="preview-footer">
+            <span class="preview-caption">Posture at a glance</span>
+            <div class="status-legend" aria-label="Posture color legend">
+                <span><i class="legend-dot acceptable"></i>Acceptable</span>
+                <span><i class="legend-dot checking"></i>Checking</span>
+                <span><i class="legend-dot not-acceptable"></i>Not acceptable</span>
+            </div>
+        </div>
+        <div class="camera-tip"><svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg><p>A clear view makes a difference. Keep your upper body visible and your camera steady.</p></div>
+    </section>
+    <aside class="workspace-sidebar" aria-label="Session controls and recordings">
+        <section class="panel controls-panel" aria-labelledby="controls-title">
+            <div class="sidebar-heading"><h2 id="controls-title">Your session</h2></div>
+            <form action="{{ url_for('tasks') }}" id="tasksForm" method="post">
+                <div class="control-step">
+                    <div class="step-heading"><span class="step-number">01</span><label for="cameraButton">Set up your view</label></div>
+                    <p>Start with a clear view of your posture.</p>
+                    <div class="button-with-icon"><svg class="icon" aria-hidden="true"><use href="#icon-camera"></use></svg><input class="button button-primary" id="cameraButton" name="stop" type="submit" value="Open Video Camera"></div>
+                </div>
+                <div class="control-step">
+                    <div class="step-heading"><span class="step-number">02</span><label for="sessionButton">Capture a session</label></div>
+                    <p>Record your angles to review them later.</p>
+                    <div class="button-with-icon"><svg class="icon" aria-hidden="true"><use href="#icon-record"></use></svg><input class="button button-secondary" id="sessionButton" name="session" type="submit" value="Start Session"></div>
+                </div>
+                <div class="segmentation-control"><svg class="icon" aria-hidden="true"><use href="#icon-mask"></use></svg><input class="button button-quiet" name="segmask" type="submit" value="Segmentation Mask"></div>
+            </form>
+        </section>
+        <section class="panel library-panel" id="saved-sessions" aria-labelledby="library-title">
+            <div class="library-heading"><span class="icon-tile"><svg class="icon" aria-hidden="true"><use href="#icon-folder"></use></svg></span><h2 id="library-title">Session library</h2></div>
+            <p>A closer look at the moments you've recorded.</p>
+            <form action="{{ url_for('show_all_plots') }}" method="post">
+                <label class="field-label" for="jsonFileSelector">Saved session</label>
+                <select id="jsonFileSelector" name="json_file" data-files-url="{{ url_for('get_json_files') }}"><option value="">Loading sessions…</option></select>
+                <div class="button-with-icon button-icon-right"><svg class="icon" aria-hidden="true"><use href="#icon-arrow"></use></svg><input class="button button-secondary" type="submit" value="Show Statistics"></div>
+            </form>
+        </section>
+    </aside>
 </div>
-
-<!-- JavaScript to change button text and populate JSON file selector -->
-<script>
-    $(document).ready(function () {
-        var cameraButton = $('#cameraButton');
-        var sessionButton = $('#sessionButton');
-
-        var cameraState = localStorage.getItem('cameraState') || "Open Video Camera";
-        var sessionState = localStorage.getItem('sessionState') || "Start Session";
-
-        cameraButton.val(cameraState);
-        sessionButton.val(sessionState);
-
-        cameraButton.click(function () {
-            if (cameraState === 'Open Video Camera') {
-                cameraState = 'Close Video Camera';
-            } else {
-                cameraState = 'Open Video Camera';
-            }
-            cameraButton.val(cameraState);
-
-            localStorage.setItem('cameraState', cameraState);
-
-            $('#tasksForm').submit();
-        });
-
-        sessionButton.click(function () {
-            if (sessionState === 'Start Session') {
-                sessionState = 'Stop Session';
-            } else {
-                sessionState = 'Start Session';
-            }
-            sessionButton.val(sessionState);
-
-            localStorage.setItem('sessionState', sessionState);
-
-            $('#tasksForm').submit();
-        });
-
-        // Populate JSON file selector
-        $.getJSON("{{ url_for('get_json_files') }}", function (data) {
-            var jsonFileSelector = $('#jsonFileSelector');
-            jsonFileSelector.empty(); // Clear existing options
-            $.each(data.json_files, function (index, filename) {
-                jsonFileSelector.append($('<option>', {
-                    value: filename,
-                    text: filename
-                }));
-            });
-        });
-    });
-</script>
-
-</body>
-</html>
+{% endblock %}
+{% block scripts %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="{{ url_for('static', filename='js/index.js') }}"></script>
+{% endblock %}

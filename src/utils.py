@@ -2,6 +2,7 @@ import logging
 import math
 import os
 import sys
+from logging.handlers import RotatingFileHandler
 
 import cv2
 import numpy as np
@@ -12,15 +13,37 @@ from src.config import RESIZE_PERCENT, MAX_HOLDING_TIME, base_dir
 
 
 def set_logger():
-    return
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        handlers=[
-            logging.FileHandler("../logs/app.log", mode='w'),
-            logging.StreamHandler(sys.stdout)
-        ]
+    """Configure application logging once, keeping existing handlers intact."""
+    logger = logging.getLogger()
+    if any(handler.name == 'posture.file' for handler in logger.handlers):
+        return logger
+
+    level_name = os.environ.get('LOG_LEVEL', 'INFO').upper()
+    level = getattr(logging, level_name, None)
+    invalid_level = not isinstance(level, int)
+    logger.setLevel(logging.INFO if invalid_level else level)
+    formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(module)s: %(message)s')
+
+    log_dir = os.path.join(base_dir, 'logs')
+    os.makedirs(log_dir, exist_ok=True)
+    file_handler = RotatingFileHandler(
+        os.path.join(log_dir, 'app.log'), maxBytes=5 * 1024 * 1024,
+        backupCount=3, encoding='utf-8', delay=True
     )
+    file_handler.name = 'posture.file'
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+    if not any(isinstance(handler, logging.StreamHandler)
+               and not isinstance(handler, logging.FileHandler) for handler in logger.handlers):
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.name = 'posture.console'
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
+
+    if invalid_level:
+        logger.warning('Unknown LOG_LEVEL %r; using INFO.', level_name)
+    return logger
 
 
 def visualize_angles(image, angle, joint, width, height):

@@ -1,0 +1,20 @@
+[project]
+name = "posture-risk-assessment"
+version = "0.1.0"
+description = "Local webcam posture assessment and recorded session statistics."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "Flask==3.0.3",
+    "matplotlib==3.8.4",
+    # Retains mp.solutions and provides Python 3.12 / Linux ARM64 wheels.
+    "mediapipe==0.10.14",
+    "numpy==1.26.4",
+    "opencv-contrib-python==4.9.0.80",
+    "pandas==2.2.2",
+    "Pillow==10.3.0",
+    "seaborn==0.13.2",
+]
+
+[tool.uv]
+package = false

@@ -31,6 +31,9 @@ class VideoCamera(object):
         """
 
         logging.info('Release Cam')
+        self.close()
+
+    def close(self):
         self.video.release()
 
     def get_frame(self, holistic):
@@ -45,7 +48,7 @@ class VideoCamera(object):
 
         success, frame = self.video.read()
 
-        if not success:
+        if not success or frame is None:
             return None, None
 
         if frame is not None:
