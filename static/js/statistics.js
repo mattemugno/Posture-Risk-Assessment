@@ -119,14 +119,19 @@ document.getElementById('back-button').addEventListener('click', function () {
         layout.legend = {orientation: 'h', x: 0.5, xanchor: 'center', y: -0.08,
             itemclick: false, itemdoubleclick: false, font: {size: 13}};
         layout.annotations = [];
+        layout.images = [];
         const domains = [];
         data.risk.forEach((item, index) => {
             const domain = narrowScreen.matches
-                ? {x: [0.15, 0.85], y: [0.7 - index * 0.34, 0.94 - index * 0.34]}
-                : {x: [index / 3 + 0.025, (index + 1) / 3 - 0.025], y: [0.12, 0.85]};
+                ? {x: [0.02, 0.72], y: [0.7 - index * 0.34, 0.94 - index * 0.34]}
+                : {x: [index / 3 + 0.015, index / 3 + 0.235], y: [0.12, 0.85]};
             domains.push(domain);
             const x = (domain.x[0] + domain.x[1]) / 2;
             const y = (domain.y[0] + domain.y[1]) / 2;
+            layout.images.push({source: item.image, xref: 'paper', yref: 'paper',
+                x: narrowScreen.matches ? 0.86 : index / 3 + 0.285, y,
+                sizex: narrowScreen.matches ? 0.22 : 0.08, sizey: narrowScreen.matches ? 0.24 : 0.6,
+                xanchor: 'center', yanchor: 'middle', sizing: 'contain'});
             layout.annotations.push(
                 {text: '<b>' + item.label + '</b>', x, y: domain.y[1] + 0.03, yanchor: 'bottom',
                     showarrow: false, font: {size: 16}},
@@ -259,7 +264,7 @@ document.getElementById('back-button').addEventListener('click', function () {
         narrowScreen.addEventListener('change', () => {
             const updated = riskLayout(data);
             Plotly.restyle(charts[3], {domain: updated.domains});
-            Plotly.relayout(charts[3], {annotations: updated.layout.annotations});
+            Plotly.relayout(charts[3], {annotations: updated.layout.annotations, images: updated.layout.images});
             charts.slice(0, 3).forEach(element => {
                 const update = {};
                 for (const axis of ['xaxis', 'xaxis2', 'xaxis3']) {

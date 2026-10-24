@@ -1,3 +1,4 @@
+import base64
 import json
 import logging
 import math
@@ -158,6 +159,9 @@ class PostureEvaluation:
                 self.not_acceptable_percentages or (),
             )
         ]
+        for item, name in zip(risk, ('left_shoulder', 'right_shoulder', 'trunk')):
+            with open(os.path.join(base_dir, 'img', name + '.jpg'), 'rb') as image:
+                item['image'] = 'data:image/jpeg;base64,' + base64.b64encode(image.read()).decode('ascii')
         return {
             'timestamps': self.time,
             'series': [
