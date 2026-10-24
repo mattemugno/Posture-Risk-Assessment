@@ -52,7 +52,7 @@ class PostureEvaluation:
 
         plt.set_loglevel('WARNING')
 
-        with open(self.data_path, 'r') as file:
+        with open(self.data_path, 'r', encoding='utf-8') as file:
             data = json.load(file)
             data = [v for v in data if
                     v['r_shldr'] is not None and v['l_shldr'] is not None and v['trunk_incl'] is not None]

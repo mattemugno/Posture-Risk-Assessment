@@ -79,11 +79,19 @@ class InteractiveChartTests(unittest.TestCase):
         self.assertEqual(self.client.get('/session_data').status_code, 400)
         outside = self.root / 'outside.json'
         outside.write_text(json.dumps(self.records))
-        (self.data / 'link.json').symlink_to(outside)
         (self.data / 'invalid.json').write_text('not JSON')
-        for filename in ('../outside.json', str(outside), 'link.json', 'invalid.json', 'missing.json'):
+        for filename in ('../outside.json', str(outside), 'invalid.json', 'missing.json'):
             with self.subTest(filename=filename):
                 self.assertEqual(self.get_data(filename).status_code, 400)
+
+    def test_symlink_outside_data_is_rejected(self):
+        outside = self.root / 'outside.json'
+        outside.write_text(json.dumps(self.records))
+        try:
+            (self.data / 'link.json').symlink_to(outside)
+        except (OSError, NotImplementedError) as error:
+            self.skipTest(f'Symlink creation is unavailable: {error}')
+        self.assertEqual(self.get_data('link.json').status_code, 400)
 
     def test_empty_session_has_no_risk_calculation(self):
         self.write_session('empty.json', [])
@@ -104,6 +112,15 @@ class InteractiveChartTests(unittest.TestCase):
         self.assertIn(b'no complete posture samples', response.data)
         for endpoint in ('/plot?', '/postureStatus?', '/plot_heatmap?', '/piecharts?'):
             self.assertNotIn(endpoint.encode(), response.data)
+
+    def test_legacy_reports_reject_sessions_without_complete_samples(self):
+        for records in ([], [dict(self.records[0], r_shldr=None)]):
+            self.write_session('empty.json', records)
+            for endpoint in ('/plot', '/postureStatus', '/plot_heatmap', '/piecharts'):
+                with self.subTest(endpoint=endpoint, records=records):
+                    response = self.client.get(endpoint, query_string={'json_file': 'empty.json'})
+                    self.assertEqual(response.status_code, 400)
+                    self.assertIn(b'no complete posture samples', response.data)
 
     def test_serializing_twice_does_not_accumulate_risk_counts(self):
         posture = PostureEvaluation('first.json')

@@ -51,12 +51,12 @@
                 <div class="control-step">
                     <div class="step-heading"><span class="step-number">01</span><label for="cameraButton">Set up your view</label></div>
                     <p>Start with a clear view of your posture.</p>
-                    <div class="button-with-icon"><svg class="icon" aria-hidden="true"><use href="#icon-camera"></use></svg><input class="button button-primary" id="cameraButton" name="stop" type="submit" value="Open Video Camera"></div>
+                    <div class="button-with-icon"><svg class="icon" aria-hidden="true"><use href="#icon-camera"></use></svg><input class="button button-primary" id="cameraButton" name="stop" type="submit" value="{% if camera_open %}Close Video Camera{% else %}Open Video Camera{% endif %}"></div>
                 </div>
                 <div class="control-step">
                     <div class="step-heading"><span class="step-number">02</span><label for="sessionButton">Capture a session</label></div>
                     <p>Record your angles to review them later.</p>
-                    <div class="button-with-icon"><svg class="icon" aria-hidden="true"><use href="#icon-record"></use></svg><input class="button button-secondary" id="sessionButton" name="session" type="submit" value="Start Session"></div>
+                    <div class="button-with-icon"><svg class="icon" aria-hidden="true"><use href="#icon-record"></use></svg><input class="button button-secondary" id="sessionButton" name="session" type="submit" value="{% if session_active %}Stop Session{% else %}Start Session{% endif %}"></div>
                 </div>
                 <div class="segmentation-control"><svg class="icon" aria-hidden="true"><use href="#icon-mask"></use></svg><input class="button button-quiet" name="segmask" type="submit" value="Segmentation Mask"></div>
             </form>
@@ -74,6 +74,5 @@
 </div>
 {% endblock %}
 {% block scripts %}
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-<script src="{{ url_for('static', filename='js/index.js') }}"></script>
+<script defer src="{{ url_for('static', filename='js/index.js') }}"></script>
 {% endblock %}

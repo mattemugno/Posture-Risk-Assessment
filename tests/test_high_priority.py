@@ -83,8 +83,42 @@ class ApplicationSafetyTests(unittest.TestCase):
             self.assertIn(b'role="alert"', response.data)
         response = self.client.get('/video_feed', buffered=False)
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'--frame', next(response.response))
+        frame = next(response.response)
+        self.assertTrue(frame.startswith(b'--frame\r\nContent-Type: image/gif\r\n\r\nGIF89a'))
         response.close()
+
+    def assert_controls(self, response, camera, session):
+        html = response.get_data(as_text=True)
+        self.assertRegex(html, f'id="cameraButton"[^>]*value="{camera}"')
+        self.assertRegex(html, f'id="sessionButton"[^>]*value="{session}"')
+
+    def test_controls_follow_server_state_across_reloads(self):
+        self.assert_controls(self.client.get('/'), 'Open Video Camera', 'Start Session')
+        self.open_camera()
+        self.assert_controls(self.client.get('/'), 'Close Video Camera', 'Start Session')
+        response = self.client.post('/requests', data={'session': 'Start Session'})
+        self.assert_controls(response, 'Close Video Camera', 'Stop Session')
+        self.assert_controls(self.client.get('/'), 'Close Video Camera', 'Stop Session')
+        response = self.client.post('/requests', data={'stop': 'Close Video Camera'})
+        self.assert_controls(response, 'Open Video Camera', 'Start Session')
+
+    def test_repeated_commands_do_not_toggle_or_reset_recordings(self):
+        pose = self.open_camera()
+        self.client.post('/requests', data={'stop': 'Open Video Camera'})
+        self.assertIs(self.manager.pose, pose)
+        self.client.post('/requests', data={'session': 'Start Session'})
+        self.assertTrue(pose.recorded.wait(1))
+        recorded_data = pose.data
+        self.client.post('/requests', data={'session': 'Start Session'})
+        self.assertIs(pose.data, recorded_data)
+        self.assertTrue(pose.record_session)
+        for _ in range(2):
+            self.client.post('/requests', data={'session': 'Stop Session'})
+        self.assertFalse(pose.record_session)
+        self.assertEqual(len(self.saved_sessions()), 1)
+        for _ in range(2):
+            self.client.post('/requests', data={'stop': 'Close Video Camera'})
+        self.assertIsNone(self.manager.pose)
 
     def test_unavailable_camera_does_not_load_model_or_leave_state(self):
         camera = Mock()
@@ -97,6 +131,7 @@ class ApplicationSafetyTests(unittest.TestCase):
         self.assertIn(b'No camera available', response.data)
         self.assertIsNone(self.manager.pose)
         self.assertFalse(self.manager.recording)
+        self.assert_controls(response, 'Open Video Camera', 'Start Session')
         camera.close.assert_called_once()
         model.assert_not_called()
 
@@ -122,7 +157,7 @@ class ApplicationSafetyTests(unittest.TestCase):
                 raise RuntimeError('Chart test timed out')
             return Figure(), []
 
-        self.manager.posture = SimpleNamespace(plot_angles_over_time=plot)
+        self.manager.posture = SimpleNamespace(time=[0], plot_angles_over_time=plot)
 
         def request_chart():
             with app.test_client() as client:
@@ -176,6 +211,7 @@ class ApplicationSafetyTests(unittest.TestCase):
                 self.assertIs(self.manager.pose, pose)
                 self.assertTrue(pose.record_session)
                 self.assertFalse(pose.closed)
+                self.assert_controls(response, 'Close Video Camera', 'Stop Session')
 
     def test_multiple_streams_share_capture_and_survive_camera_close(self):
         pose = self.open_camera()
@@ -187,7 +223,7 @@ class ApplicationSafetyTests(unittest.TestCase):
             self.assertEqual(pose.frame_count, before)
         self.client.post('/requests', data={'stop': 'Close Video Camera'})
         for stream in streams:
-            self.assertIn(b'image/jpeg', next(stream.response))
+            self.assertIn(b'image/gif', next(stream.response))
             stream.close()
 
 
@@ -243,17 +279,26 @@ class StatisticsSafetyTests(unittest.TestCase):
         app.config['TESTING'] = True
         self.client = app.test_client()
 
-    def test_traversal_absolute_and_symlink_paths_are_rejected(self):
+    def test_traversal_and_absolute_paths_are_rejected(self):
         self.client.post('/show_all_plots', data={'json_file': 'first.json'})
         previous = self.manager.posture
         outside = self.root / 'outside.json'
         outside.write_text((self.data / 'first.json').read_text())
-        (self.data / 'alias.json').symlink_to(outside)
-        for filename in ['../outside.json', str(outside), 'alias.json', '../README.md']:
+        for filename in ['../outside.json', str(outside), '../README.md']:
             response = self.client.post('/show_all_plots', data={'json_file': filename})
             self.assertEqual(response.status_code, 400)
             self.assertIs(self.manager.posture, previous)
             self.assertEqual(self.client.get('/plot', query_string={'json_file': filename}).status_code, 400)
+
+    def test_symlink_outside_data_is_rejected(self):
+        outside = self.root / 'outside.json'
+        outside.write_text((self.data / 'first.json').read_text())
+        try:
+            (self.data / 'alias.json').symlink_to(outside)
+        except (OSError, NotImplementedError) as error:
+            self.skipTest(f'Symlink creation is unavailable: {error}')
+        self.assertEqual(self.client.post('/show_all_plots', data={'json_file': 'alias.json'}).status_code, 400)
+        self.assertEqual(self.client.get('/plot?json_file=alias.json').status_code, 400)
 
     def test_chart_stays_on_its_selected_file_after_other_client_selects(self):
         response = self.client.post('/show_all_plots', data={'json_file': 'first.json'})

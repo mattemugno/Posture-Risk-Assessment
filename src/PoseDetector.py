@@ -289,6 +289,6 @@ class PoseDetector:
         filename = f'{current_time}-{uuid4().hex}.json'
 
         output_path = os.path.join(path_to_save, filename)
-        with open(output_path, 'x') as output:
+        with open(output_path, 'x', encoding='utf-8') as output:
             json.dump(self.data, output)
         logging.info('Saved %d samples to %s', len(self.data), output_path)

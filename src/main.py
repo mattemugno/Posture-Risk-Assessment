@@ -22,7 +22,9 @@ pose_manager = PoseManager()
 @app.context_processor
 def presentation_state():
     with pose_manager.lock:
-        return {'camera_open': pose_manager.pose is not None}
+        pose = pose_manager.pose
+        return {'camera_open': pose is not None,
+                'session_active': pose is not None and pose.record_session}
 
 
 def synchronized(lock_name):
@@ -35,7 +37,7 @@ def synchronized(lock_name):
     return decorate
 
 
-def get_posture():
+def get_posture(allow_empty=False):
     filename = request.args.get('json_file')
     if filename:
         try:
@@ -44,6 +46,8 @@ def get_posture():
             abort(400, description='Unable to load the selected session.')
     if pose_manager.posture is None:
         abort(400, description='Select a session first.')
+    if not allow_empty and not pose_manager.posture.time:
+        abort(400, description='The selected session has no complete posture samples.')
     return pose_manager.posture
 
 
@@ -70,17 +74,17 @@ def tasks():
         try:
             if request.form.get('segmask') == 'Segmentation Mask':
                 pose_manager.pose.enable_segmentation = not pose_manager.pose.enable_segmentation
-            elif request.form.get('stop') in ('Open Video Camera', 'Close Video Camera'):
-                if pose_manager.recording:
-                    pose_manager.destroy_pose_detector()
-                else:
-                    pose_manager.create_pose_detector()
-            elif request.form.get('session') in ('Start Session', 'Stop Session'):
+            elif request.form.get('stop') == 'Open Video Camera':
+                pose_manager.create_pose_detector()
+            elif request.form.get('stop') == 'Close Video Camera':
+                pose_manager.destroy_pose_detector()
+            elif request.form.get('session') == 'Stop Session':
                 if pose_manager.pose.record_session:
                     pose_manager.pose.save_data()
                     pose_manager.pose.record_session = False
                     logging.info('Stop Session')
-                else:
+            elif request.form.get('session') == 'Start Session':
+                if not pose_manager.pose.record_session:
                     pose_manager.pose.data = []
                     pose_manager.pose.record_session = True
                     logging.info('Start Session')
@@ -117,7 +121,7 @@ def get_json_files():
 def session_data():
     if not request.args.get('json_file'):
         abort(400, description='Select a session first.')
-    posture = get_posture()
+    posture = get_posture(allow_empty=True)
     try:
         return posture.to_chart_data()
     except (ValueError, TypeError, OverflowError):
@@ -158,7 +162,8 @@ def gen():
         placeholder = img_file.read()
     while True:
         frame = pose_manager.get_frame()
-        content_type = b'image/png' if frame is not None else b'image/jpeg'
+        # The bundled placeholder is a GIF despite its .png filename.
+        content_type = b'image/png' if frame is not None else b'image/gif'
         yield (b'--frame\r\nContent-Type: ' + content_type + b'\r\n\r\n'
                + (frame if frame is not None else placeholder) + b'\r\n\r\n')
         time.sleep(0.03 if frame is not None else 0.1)

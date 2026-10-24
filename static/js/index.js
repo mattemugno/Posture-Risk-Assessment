@@ -1,29 +1,14 @@
-$(document).ready(function () {
-    const tasksForm = $('#tasksForm');
-
-    function bindToggle(button, storageKey, initialValue, toggledValue) {
-        let state = localStorage.getItem(storageKey) || initialValue;
-        button.val(state);
-
-        button.click(function () {
-            state = state === initialValue ? toggledValue : initialValue;
-            button.val(state);
-            localStorage.setItem(storageKey, state);
-            tasksForm.submit();
-        });
+(async function () {
+    // Camera/session forms submit once, with labels rendered from server state.
+    const selector = document.getElementById('jsonFileSelector');
+    try {
+        const response = await fetch(selector.dataset.filesUrl);
+        if (!response.ok) throw new Error('Unable to load saved sessions');
+        const data = await response.json();
+        const options = data.json_files.map(filename => new Option(filename, filename));
+        selector.replaceChildren(...(options.length ? options : [new Option('No saved sessions', '')]));
+    } catch (error) {
+        selector.replaceChildren(new Option('Unable to load saved sessions', ''));
+        console.warn('Unable to load saved sessions.', error);
     }
-
-    bindToggle($('#cameraButton'), 'cameraState', 'Open Video Camera', 'Close Video Camera');
-    bindToggle($('#sessionButton'), 'sessionState', 'Start Session', 'Stop Session');
-
-    const jsonFileSelector = $('#jsonFileSelector');
-    $.getJSON(jsonFileSelector.attr('data-files-url'), function (data) {
-        jsonFileSelector.empty();
-        $.each(data.json_files, function (index, filename) {
-            jsonFileSelector.append($('<option>', {
-                value: filename,
-                text: filename
-            }));
-        });
-    });
-});
+})();
